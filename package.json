@@ -1,0 +1,47 @@
+{
+  "name": "rote",
+  "version": "1.0.0",
+  "description": "Memorize anything with flashcards.",
+  "main": "yarn",
+  "scripts": {
+    "start": "yarn run build",
+    "build": "gulp",
+    "serve": "gulp watch",
+    "lint": "eslint ./src/**/*.js",
+    "lint-file": "eslint"
+  },
+  "author": "Luke Champine",
+  "license": "MIT",
+  "repository": "https://github.com/lukechampine/rote",
+  "devDependencies": {
+    "@rollup/plugin-json": "^4.0.3",
+    "@sucrase/gulp-plugin": "^2.0.0",
+    "babel-eslint": "^10.1.0",
+    "cssnano": "^4.1.10",
+    "eslint": "^6.8.0",
+    "eslint-plugin-react": "^7.19.0",
+    "gulp": "^4.0.0",
+    "gulp-better-rollup": "^4.0.1",
+    "gulp-cssimport": "^7.0.0",
+    "gulp-minify": "^3.1.0",
+    "gulp-postcss": "^8.0.0",
+    "rollup": "^1.6.0",
+    "rollup-plugin-commonjs": "^9.2.0",
+    "rollup-plugin-json": "^4.0.0",
+    "rollup-plugin-node-builtins": "^2.1.2",
+    "rollup-plugin-node-globals": "^1.4.0",
+    "rollup-plugin-node-resolve": "^4.0.0",
+    "rollup-plugin-root-import": "^0.2.3",
+    "sucrase": "^3.8.0"
+  },
+  "dependencies": {
+    "fs-extra": "^8.1.0",
+    "react": "^16.8.6",
+    "react-dom": "^16.8.6",
+    "react-hook-mousetrap": "^2.0.2",
+    "react-markdown": "^4.3.1",
+    "react-router-dom": "^5.0.0",
+    "urbit-ob": "^4.1.2",
+    "urbit-sigil-js": "^1.3.13"
+  }
+}
