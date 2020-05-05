@@ -1,10 +1,10 @@
 import React from 'react'
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom'
 
-function SidebarItem({deck}) {
+function SidebarItem({ deck }) {
   const location = useLocation()
   const linkURL = `/~rote/deck/${deck.ship}/${deck.path}`
-  const selectedClass = (location.pathname === linkURL) ? 'bg-gray5 bg-gray1-d c-default' : 'pointer hover-bg-gray5 hover-bg-gray1-d';
+  const selectedClass = (location.pathname === linkURL) ? 'bg-gray5 bg-gray1-d c-default' : 'pointer hover-bg-gray5 hover-bg-gray1-d'
   return (
     <Link to={linkURL}>
       <div className={'w-100 v-mid f9 ph4 pv1 ' + selectedClass}>
@@ -14,7 +14,7 @@ function SidebarItem({deck}) {
   )
 }
 
-export function Sidebar({decks, selected}) {
+export function Sidebar({ decks, selected }) {
   const deckList = decks.sort((a, b) => a.title.localeCompare(b.title)).toList()
   return (
     <div className='bn br-m br-l br-xl b--gray4 b--gray1-d lh-copy min-w14 h-100 flex-shrink-0 pt3 pt0-m pt0-l pt0-xl relative overflow-y-hidden dn-s flex-basis-100-s flex-basis-250-ns'>
@@ -28,8 +28,7 @@ export function Sidebar({decks, selected}) {
           <SidebarItem
             key={i}
             deck={deck}
-            selected={deck.path === selected}
-          />
+            selected={deck.path === selected} />
         ))}
       </div>
     </div>

@@ -24,10 +24,7 @@
     "array-bracket-spacing": ["error", "never"],
     "arrow-parens": [
       "error",
-      "as-needed",
-      {
-        "requireForBlockBody": true
-      }
+      "as-needed"
     ],
     "arrow-spacing": "error",
     "block-spacing": ["error", "always"],
@@ -38,29 +35,10 @@
         "properties": "never"
       }
     ],
-    "comma-dangle": ["error", "never"],
+    "comma-dangle": ["error", "always-multiline"],
     "eol-last": ["error", "always"],
     "func-name-matching": "error",
-    "indent": [
-      "off",
-      2,
-      {
-        "ArrayExpression": "off",
-        "SwitchCase": 1,
-        "CallExpression": {
-          "arguments": "off"
-        },
-        "FunctionDeclaration": {
-          "parameters": "off"
-        },
-        "FunctionExpression": {
-          "parameters": "off"
-        },
-        "MemberExpression": "off",
-        "ObjectExpression": "off",
-        "ImportDeclaration": "off"
-      }
-    ],
+    "indent": ["error", 2],
     "handle-callback-err": "off",
     "linebreak-style": ["error", "unix"],
     "max-statements-per-line": [
@@ -127,7 +105,7 @@
     ],
     "prefer-template": "off",
     "quotes": ["error", "single"],
-    "semi": ["error", "always"],
+    "semi": ["error", "never"],
     "spaced-comment": [
       "error",
       "always",
@@ -139,7 +117,7 @@
     "unicode-bom": ["error", "never"],
     "valid-jsdoc": "error",
     "wrap-iife": ["error", "inside"],
-    "react/jsx-closing-bracket-location": 1,
+    "react/jsx-closing-bracket-location": [1, "after-props"],
     "react/jsx-tag-spacing": 1,
     "react/jsx-max-props-per-line": ["error", { "maximum": 1, "when": "multiline" }],
     "react/prop-types": 0

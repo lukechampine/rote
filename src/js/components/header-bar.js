@@ -1,15 +1,15 @@
-import React, { Component } from 'react';
-import { GroupFilter } from './group-filter';
-import { Sigil } from '/components/lib/icons/sigil';
+import React, { Component } from 'react'
+import { GroupFilter } from './group-filter'
+import { Sigil } from '/components/lib/icons/sigil'
 
 export class HeaderBar extends Component {
   render() {
-    let popout = window.location.href.includes('popout/')
-      ? 'dn' : 'dn db-m db-l db-xl';
+    const popout = window.location.href.includes('popout/')
+      ? 'dn' : 'dn db-m db-l db-xl'
 
-    let invites = (this.props.invites && this.props.invites['/contacts'])
+    const invites = (this.props.invites && this.props.invites['/contacts'])
       ? this.props.invites['/contacts']
-      : {};
+      : {}
 
     return (
       <div
@@ -23,8 +23,7 @@ export class HeaderBar extends Component {
               ship={'~' + window.ship}
               classes='v-mid mix-blend-diff'
               size={16}
-              color={'#000000'}
-            />
+              color={'#000000'} />
           </a>
           <GroupFilter invites={invites} associations={this.props.associations} />
           <span className='dib f9 v-mid gray2 ml1 mr1 c-default inter'>/</span>
@@ -35,6 +34,6 @@ export class HeaderBar extends Component {
             ⟵</a> <p className='dib f9 v-mid inter ml2 white-d'>Rote</p>
         </div>
       </div>
-    );
+    )
   }
 }

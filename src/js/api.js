@@ -35,7 +35,7 @@ function deckToRecord(deck) {
 
 class UrbitApi {
   setAuthTokens(authTokens) {
-    this.authTokens = authTokens;
+    this.authTokens = authTokens
   }
 
   setSelected(selected) {
@@ -47,29 +47,31 @@ class UrbitApi {
       fail,
       event => success({
         data: event,
-        from: {ship, path},
+        from: { ship, path },
       }),
       fail,
-    );
+    )
   }
 
   action(appl, mark, data) {
     return new Promise((resolve, reject) => {
-      window.urb.poke(ship, appl, mark, data, resolve, reject);
-    });
+      window.urb.poke(this.authTokens.ship, appl, mark, data, resolve, reject)
+    })
   }
 
   handleErrors(response) {
-    if (!response.ok) throw Error(response.status);
-    return response;
+    if (!response.ok) {
+      throw Error(response.status)
+    }
+    return response
   }
 
   initBindings(onEvent, onErr) {
-    if (!api.authTokens) {
+    if (!this.authTokens) {
       console.error('~~~ ERROR: Must set api.authTokens before operation ~~~')
       return
     }
-    this.bind('/primary', 'PUT', api.authTokens.ship, 'rote',
+    this.bind('/primary', 'PUT', this.authTokens.ship, 'rote',
       e => onEvent(deckToRecord(e.data)),
       onErr,
     )
@@ -77,27 +79,27 @@ class UrbitApi {
 
   fetchDecks(callback) {
     fetch('/~rote/decks.json')
-    .then((response) => response.json())
-    .then(json => {
-      callback(json.reduce((decks, raw) => {
-        const deck = deckToRecord(raw)
-        return decks.set(deck.id, deck)
-      }, Map({})))
-    })
+      .then(response => response.json())
+      .then(json => {
+        callback(json.reduce((decks, raw) => {
+          const deck = deckToRecord(raw)
+          return decks.set(deck.id, deck)
+        }, Map({})))
+      })
   }
 
   importDeck(path, callback) {
-    let action = {
+    const action = {
       import: {
         who: path.split('/')[0].slice(1),
         deck: path.split('/')[1],
-      }
+      },
     }
     this.action('rote', 'rote-action', action)
-        .catch(console.log)
-        .then(callback)
+      .catch(console.log)
+      .then(callback)
   }
 }
 
-export let api = new UrbitApi();
-window.api = api;
+export const api = new UrbitApi()
+window.api = api
