@@ -26,10 +26,10 @@
 :: /sur/rote.hoon contains our central 'deck' mold, as well as an 'action' mold,
 :: which is used by both the backend and by the frontend.
 ::
-:: We can refer to our imported mold as 'deck:rote'. If we had written '/-
-:: *rote' here, there would be no namespacing; we would refer to 'deck:rote'
-:: as 'deck'. My personal preference is to always use explicit namespacing,
-:: but it's not uncommon to expose one or two namespaces, as long as it doesn't
+:: We can refer to our deck mold as 'deck:rote'. If we had written '/- *rote'
+:: here, there would be no namespacing; we would refer to 'deck:rote' as
+:: 'deck'. My personal preference is to always use explicit namespacing, but
+:: it's not uncommon to expose one or two namespaces, as long as it doesn't
 :: cause too much ambiguity.
 ::
 :: (By the way, ':' isn't some special namespace accessor syntax; it's just the
@@ -46,6 +46,12 @@
 :: authentication and converting JSON values to raw octets. cram is used for
 :: parsing udon metadata; don't worry about it. default-agent provides defaults
 :: (or 'stubs') for the 10 Gall agent arms.
+::
+:: The '/-' and '/+' runes also support custom faces; we could write e.g.
+:: '/+  srv=server' if we wanted to refer to 'server' as 'srv'. This is often
+:: done when your app has both a type definition file and a library file. If
+:: that were the case here, we would import those as '/-  rote-sur=rote' and
+:: '/+  rote-lib=rote', respectively.
 ::
 /+  server, cram, default-agent
 ::
