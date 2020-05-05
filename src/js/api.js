@@ -1,18 +1,18 @@
 import { Map, Record, List } from 'immutable'
 
 const DeckRecord = Record({
-  id: "<?>",
-  path: "<?>",
-  title: "<?>",
-  ship: "<?>",
+  id: '<?>',
+  path: '<?>',
+  title: '<?>',
+  ship: '<?>',
   cards: List([]),
   cardIndex: 0,
   answerShown: false,
 })
 
 const CardRecord = Record({
-  front: "<?>",
-  back: "<?>",
+  front: '<?>',
+  back: '<?>',
 })
 
 function deckToRecord(deck) {
@@ -42,7 +42,7 @@ class UrbitApi {
     // TODO
   }
 
-  bind(path, method, ship = this.authTokens.ship, appl = "rote", success, fail) {
+  bind(path, method, ship = this.authTokens.ship, appl = 'rote', success, fail) {
     window.urb.subscribe(ship, appl, path,
       fail,
       event => success({
@@ -66,7 +66,7 @@ class UrbitApi {
 
   initBindings(onEvent, onErr) {
     if (!api.authTokens) {
-      console.error("~~~ ERROR: Must set api.authTokens before operation ~~~")
+      console.error('~~~ ERROR: Must set api.authTokens before operation ~~~')
       return
     }
     this.bind('/primary', 'PUT', api.authTokens.ship, 'rote',
@@ -93,7 +93,7 @@ class UrbitApi {
         deck: path.split('/')[1],
       }
     }
-    this.action("rote", "rote-action", action)
+    this.action('rote', 'rote-action', action)
         .catch(console.log)
         .then(callback)
   }

@@ -1,11 +1,11 @@
 
 import React, { useReducer, useEffect } from 'react'
 import { BrowserRouter, Route } from 'react-router-dom'
-import { Map, Record, List } from 'immutable'
-import { HeaderBar } from "./header-bar.js"
-import { Sidebar } from "./sidebar.js"
-import { ImportDeck } from "./import.js"
-import { DeckViewer } from "./deck-viewer.js"
+import { Map, Record } from 'immutable'
+import { HeaderBar } from './header-bar.js'
+import { Sidebar } from './sidebar.js'
+import { ImportDeck } from './import.js'
+import { DeckViewer } from './deck-viewer.js'
 
 const StateRecord = Record({
   decks: Map({}),
@@ -47,7 +47,7 @@ function reducer(state, action) {
     return state.setIn(['decks', deck.id, 'answerShown'], true)
 
   default:
-    console.error(`unrecognized action type "${action.type}"`)
+    console.error(`unrecognized action type '${action.type}'`)
     console.error(action.payload)
   }
 }
@@ -70,15 +70,15 @@ export function Root() {
 
   return (
     <BrowserRouter>
-      <div className="absolute h-100 w-100 bg-gray0-d ph4-m ph4-l ph4-xl pb4-m pb4-l pb4-xl">
+      <div className='absolute h-100 w-100 bg-gray0-d ph4-m ph4-l ph4-xl pb4-m pb4-l pb4-xl'>
       <HeaderBar/>
-      <Route exact path="/~rote" render={ () => {
+      <Route exact path='/~rote' render={ () => {
         return (
-          <div className="ba-xl flex h-100">
+          <div className='ba-xl flex h-100'>
             <Sidebar decks={state.decks}/>
-            <div className="center h-100 w-100 overflow-x-hidden flex flex-column bg-white bg-gray0-d dn db-ns">
-                <div className="dt pb3 w-100 h-100">
-                  <div className="dtc v-mid f9 gray2 tc lh-copy">
+            <div className='center h-100 w-100 overflow-x-hidden flex flex-column bg-white bg-gray0-d dn db-ns'>
+                <div className='dt pb3 w-100 h-100'>
+                  <div className='dtc v-mid f9 gray2 tc lh-copy'>
                     <p>Select a deck to begin.</p>
                     <br/>
                     <p>PROTIP: You can navigate between cards with ← and →,</p>
@@ -90,23 +90,23 @@ export function Root() {
         )}}
       />
 
-      <Route exact path="/~rote/import" render={ (props) => {
+      <Route exact path='/~rote/import' render={ (props) => {
         return (
-          <div className="cf w-100 flex ba-m ba-l ba-xl b--gray4 b--gray1-d br1 h-100 h-100-minus-40-m h-100-minus-40-l h-100-minus-40-xl">
+          <div className='cf w-100 flex ba-m ba-l ba-xl b--gray4 b--gray1-d br1 h-100 h-100-minus-40-m h-100-minus-40-l h-100-minus-40-xl'>
             <Sidebar decks={state.decks}/>
             <ImportDeck />
           </div>
         )
       }}/>
 
-      <Route exact path="/~rote/deck/:ship/:path" render={ (props) => {
+      <Route exact path='/~rote/deck/:ship/:path' render={ (props) => {
         const id = `${props.match.params.ship}/${props.match.params.path}`
         const deck = state.decks.get(id)
         if (!deck) {
           return <p>Loading decks...</p>
         }
         return (
-          <div className="cf w-100 flex ba-m ba-l ba-xl b--gray4 b--gray1-d br1 h-100 h-100-minus-40-m h-100-minus-40-l h-100-minus-40-xl">
+          <div className='cf w-100 flex ba-m ba-l ba-xl b--gray4 b--gray1-d br1 h-100 h-100-minus-40-m h-100-minus-40-l h-100-minus-40-xl'>
             <Sidebar decks={state.decks}/>
             <DeckViewer deck={deck} dispatch={dispatch}/>
           </div>

@@ -9,4 +9,4 @@ api.setAuthTokens({
 
 ReactDOM.render((
   <Root />
-), document.querySelectorAll("#root")[0]);
+), document.querySelectorAll('#root')[0]);

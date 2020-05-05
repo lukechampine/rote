@@ -38296,7 +38296,7 @@
                   open: false,
                   selected: [],
                   groups: [],
-                  searchTerm: "",
+                  searchTerm: '',
                   results: []
                 };
                 this.toggleOpen = this.toggleOpen.bind(this);
@@ -38310,7 +38310,7 @@
               componentDidMount() {
                 document.addEventListener('mousedown', this.handleClickOutside);
                 this.groupIndex();
-                let selected = localStorage.getItem("urbit-selectedGroups");
+                let selected = localStorage.getItem('urbit-selectedGroups');
                 if (selected) {
                   this.setState({selected: JSON.parse(selected)}, (() => {
                     window.api.setSelected(this.state.selected);
@@ -38348,7 +38348,7 @@
                   eachGroup.push(each);
                   let name = each;
                   if (associations[each].metadata) {
-                    name = (associations[each].metadata.title !== "")
+                    name = (associations[each].metadata.title !== '')
                       ? associations[each].metadata.title : name;
                   }
                   eachGroup.push(name);
@@ -38378,12 +38378,12 @@
                   selected.push(group);
                 }
                 this.setState({
-                  searchTerm: "",
+                  searchTerm: '',
                   selected: selected,
                   results: []
                 }, (() => {
                     window.api.setSelected(this.state.selected);
-                    localStorage.setItem("urbit-selectedGroups", JSON.stringify(this.state.selected));
+                    localStorage.setItem('urbit-selectedGroups', JSON.stringify(this.state.selected));
                 }));
               }
 
@@ -38394,28 +38394,28 @@
                 });
                 this.setState({selected: selected}, (() => {
                   window.api.setSelected(this.state.selected);
-                  localStorage.setItem("urbit-selectedGroups", JSON.stringify(this.state.selected));
+                  localStorage.setItem('urbit-selectedGroups', JSON.stringify(this.state.selected));
                 }));
               }
 
               render() {
                 const { props, state } = this;
 
-                let currentGroup = "All Groups";
+                let currentGroup = 'All Groups';
 
                 if (state.selected.length > 0) {
                   let titles = state.selected.map((each) => {
                     return each[1];
                   });
-                  currentGroup = titles.join(" + ");
+                  currentGroup = titles.join(' + ');
                 }
 
                 let buttonOpened = (state.open)
-                  ? "bg-gray5 bg-gray1-d white-d" : "hover-bg-gray5 hover-bg-gray1-d white-d";
+                  ? 'bg-gray5 bg-gray1-d white-d' : 'hover-bg-gray5 hover-bg-gray1-d white-d';
 
                 let dropdownClass = (state.open)
-                  ? "absolute db z-2 bg-white bg-gray0-d white-d ba b--gray3 b--gray1-d"
-                  : "dn";
+                  ? 'absolute db z-2 bg-white bg-gray0-d white-d ba b--gray3 b--gray1-d'
+                  : 'dn';
 
                 let inviteCount = (props.invites && Object.keys(props.invites).length > 0)
                   ? react.createElement('template', { className: "dib fr" , __self: this, __source: {fileName: _jsxFileName, lineNumber: 132}}
@@ -38453,7 +38453,7 @@
                     )
                   }));
                   searchResults = (
-                    react.createElement('div', { className: "tl absolute bg-white bg-gray0-d white-d pv3 z-1 w-100 ba b--gray4 b--white-d overflow-y-scroll", style: {maxWidth: "15.67rem", maxHeight: "8rem"}, __self: this, __source: {fileName: _jsxFileName, lineNumber: 167}}
+                    react.createElement('div', { className: 'tl absolute bg-white bg-gray0-d white-d pv3 z-1 w-100 ba b--gray4 b--white-d overflow-y-scroll', style: {maxWidth: '15.67rem', maxHeight: '8rem'}, __self: this, __source: {fileName: _jsxFileName, lineNumber: 167}}
                       , react.createElement('p', { className: "f9 tl gray2 ph3 pb2"    , __self: this, __source: {fileName: _jsxFileName, lineNumber: 168}}, "Groups")
                       , groupResults
                     )
@@ -38466,8 +38466,8 @@
                     return(
                       react.createElement('span', {
                         key: each[0],
-                        className: "f9 inter black pa2 bg-gray5 bg-gray1-d " +
-                        "ba b--gray4 b--gray2-d white-d dib mr2 mt2 c-default", __self: this, __source: {fileName: _jsxFileName, lineNumber: 178}}
+                        className: 'f9 inter black pa2 bg-gray5 bg-gray1-d ' +
+                        'ba b--gray4 b--gray2-d white-d dib mr2 mt2 c-default', __self: this, __source: {fileName: _jsxFileName, lineNumber: 178}}
                       
                       , name
                       , react.createElement('span', {
@@ -38480,8 +38480,8 @@
                   });
                   selectedGroups = (
                     react.createElement('div', { className: 
-                      "f9 gray2 bb bl br b--gray3 b--gray2-d bg-gray0-d " +
-                      "white-d pa3 db w-100 inter bg-gray5 lh-solid tl"
+                      'f9 gray2 bb bl br b--gray3 b--gray2-d bg-gray0-d ' +
+                      'white-d pa3 db w-100 inter bg-gray5 lh-solid tl'
                     , __self: this, __source: {fileName: _jsxFileName, lineNumber: 193}}
                     , allSelected
                     )
@@ -38496,15 +38496,15 @@
                     , react.createElement('p', { className: "dib f9 pointer pv1 ph2 mw5 truncate v-mid"       , __self: this, __source: {fileName: _jsxFileName, lineNumber: 207}}, currentGroup)
                     )
                     , react.createElement('div', { className: dropdownClass,
-                      style: { maxHeight: "24rem", width: 285 },
+                      style: { maxHeight: '24rem', width: 285 },
                       ref: (el) => { this.dropdown = el; }, __self: this, __source: {fileName: _jsxFileName, lineNumber: 209}}
                       , react.createElement('p', { className: "tc bb b--gray3 b--gray1-d gray3 pv4 f9"      , __self: this, __source: {fileName: _jsxFileName, lineNumber: 212}}, "Group Select and Filter"   )
-                      , react.createElement('a', { href: "/~groups", className: "ma4 bg-gray5 bg-gray1-d f9 tl pa1 br1 db no-underline"        , style: {paddingLeft: "6.5px", paddingRight: "6.5px"}, __self: this, __source: {fileName: _jsxFileName, lineNumber: 213}}, "Manage all Groups"
+                      , react.createElement('a', { href: "/~groups", className: "ma4 bg-gray5 bg-gray1-d f9 tl pa1 br1 db no-underline"        , style: {paddingLeft: '6.5px', paddingRight: '6.5px'}, __self: this, __source: {fileName: _jsxFileName, lineNumber: 213}}, "Manage all Groups"
                       , inviteCount
                       )
                       , react.createElement('p', { className: "pt4 gray3 f9 tl mh4"    , __self: this, __source: {fileName: _jsxFileName, lineNumber: 216}}, "Filter Groups" )
                       , react.createElement('div', { className: "relative w-100 ph4 pt2 pb4"    , __self: this, __source: {fileName: _jsxFileName, lineNumber: 217}}
-                        , react.createElement('input', { className: "ba b--gray3 white-d bg-gray0-d inter w-100 f9 pa2"       , style: {boxSizing: "border-box"}, placeholder: "Group name..." ,
+                        , react.createElement('input', { className: "ba b--gray3 white-d bg-gray0-d inter w-100 f9 pa2"       , style: {boxSizing: 'border-box'}, placeholder: "Group name..." ,
                       onChange: this.search,
                       value: state.searchTerm, __self: this, __source: {fileName: _jsxFileName, lineNumber: 218}}
                       )
@@ -42561,23 +42561,23 @@
               render() {
                 const { props } = this;
 
-                let classes = props.classes || "";
+                let classes = props.classes || '';
 
                 if (props.ship.length > 14) {
                   return (
                     react.createElement('div', {
-                      className: "bg-black dib " + classes,
+                      className: 'bg-black dib ' + classes,
                       style: { width: props.size, height: props.size }, __self: this, __source: {fileName: _jsxFileName$1, lineNumber: 13}}
                     )
                   );
                 } else {
                   return (
-                    react.createElement('div', { className: "dib " + classes, style: { flexBasis: 32, backgroundColor: props.color }, __self: this, __source: {fileName: _jsxFileName$1, lineNumber: 20}}
+                    react.createElement('div', { className: 'dib ' + classes, style: { flexBasis: 32, backgroundColor: props.color }, __self: this, __source: {fileName: _jsxFileName$1, lineNumber: 20}}
                       , dist_3({
                         patp: props.ship,
                         renderer: dist_2,
                         size: props.size,
-                        colors: [props.color, "white"]
+                        colors: [props.color, 'white']
                       })
                     )
                   );
@@ -42588,26 +42588,26 @@
             const _jsxFileName$2 = "/Users/luke/urbit/rote-app/src/js/components/header-bar.js";
             class HeaderBar extends react_1 {
               render() {
-                let popout = window.location.href.includes("popout/")
-                  ? "dn" : "dn db-m db-l db-xl";
+                let popout = window.location.href.includes('popout/')
+                  ? 'dn' : 'dn db-m db-l db-xl';
 
-                let invites = (this.props.invites && this.props.invites["/contacts"])
-                  ? this.props.invites["/contacts"]
+                let invites = (this.props.invites && this.props.invites['/contacts'])
+                  ? this.props.invites['/contacts']
                   : {};
 
                 return (
                   react.createElement('div', {
                     className: 
-                      "bg-white bg-gray0-d w-100 justify-between relative tc pt3 " + popout
+                      'bg-white bg-gray0-d w-100 justify-between relative tc pt3 ' + popout
                     ,
                     style: { height: 45 }, __self: this, __source: {fileName: _jsxFileName$2, lineNumber: 15}}
                     , react.createElement('div', { className: "fl lh-copy absolute left-0"   , style: { top: 8 }, __self: this, __source: {fileName: _jsxFileName$2, lineNumber: 20}}
                       , react.createElement('a', { href: "/~groups/me", className: "dib v-mid" , __self: this, __source: {fileName: _jsxFileName$2, lineNumber: 21}}
                         , react.createElement(Sigil, {
-                          ship: "~" + window.ship,
+                          ship: '~' + window.ship,
                           classes: "v-mid mix-blend-diff" ,
                           size: 16,
-                          color: "#000000", __self: this, __source: {fileName: _jsxFileName$2, lineNumber: 22}}
+                          color: '#000000', __self: this, __source: {fileName: _jsxFileName$2, lineNumber: 22}}
                         )
                       )
                       , react.createElement(GroupFilter, { invites: invites, associations: this.props.associations, __self: this, __source: {fileName: _jsxFileName$2, lineNumber: 29}} )
@@ -42627,10 +42627,10 @@
             function SidebarItem({deck}) {
               const location = useLocation();
               const linkURL = `/~rote/deck/${deck.ship}/${deck.path}`;
-              const selectedClass = (location.pathname === linkURL) ? "bg-gray5 bg-gray1-d c-default" : "pointer hover-bg-gray5 hover-bg-gray1-d";
+              const selectedClass = (location.pathname === linkURL) ? 'bg-gray5 bg-gray1-d c-default' : 'pointer hover-bg-gray5 hover-bg-gray1-d';
               return (
                 react.createElement(Link, { to: linkURL, __self: this, __source: {fileName: _jsxFileName$3, lineNumber: 9}}
-                  , react.createElement('div', { className: "w-100 v-mid f9 ph4 pv1 " + selectedClass, __self: this, __source: {fileName: _jsxFileName$3, lineNumber: 10}}
+                  , react.createElement('div', { className: 'w-100 v-mid f9 ph4 pv1 ' + selectedClass, __self: this, __source: {fileName: _jsxFileName$3, lineNumber: 10}}
                     , react.createElement('p', { className: "dib f9" , __self: this, __source: {fileName: _jsxFileName$3, lineNumber: 11}}, deck.title)
                   )
                 )
@@ -42662,7 +42662,7 @@
             const _jsxFileName$4 = "/Users/luke/urbit/rote-app/src/js/components/import.js";
             function ImportDeck() {
                 let history = useHistory();
-                const [deckPath, setDeckPath] = react_2("");
+                const [deckPath, setDeckPath] = react_2('');
                 const importDeck = () => {
                     window.api.importDeck(deckPath, () => {
                         history.push(`/~rote`);
@@ -42672,7 +42672,7 @@
                   react.createElement('div', { className: "h-100 w-100 pt4 overflow-x-hidden flex flex-column bg-gray0-d white-d pa3"        , __self: this, __source: {fileName: _jsxFileName$4, lineNumber: 13}}
                     , react.createElement('div', {
                       className: "w-100 dn-m dn-l dn-xl inter pt1 pb6 f8"       , __self: this, __source: {fileName: _jsxFileName$4, lineNumber: 14}}
-                      , react.createElement(Link, { to: "/~rote/", __self: this, __source: {fileName: _jsxFileName$4, lineNumber: 16}}, "⟵ All Decks")
+                      , react.createElement(Link, { to: "/~rote/", __self: this, __source: {fileName: _jsxFileName$4, lineNumber: 16}}, '⟵ All Decks')
                     )
                     , react.createElement('h2', { className: "mb3 f8" , __self: this, __source: {fileName: _jsxFileName$4, lineNumber: 18}}, "Import a Deck"  )
                     , react.createElement('div', { className: "w-100", __self: this, __source: {fileName: _jsxFileName$4, lineNumber: 19}}
@@ -42684,7 +42684,7 @@
                         rows: 1,
                         onChange: e => setDeckPath(e.target.value),
                         onKeyPress: e => {
-                          if (e.key === "Enter") {
+                          if (e.key === 'Enter') {
                             e.preventDefault();
                             importDeck();
                           }
@@ -61320,10 +61320,10 @@
             const _jsxFileName$5 = "/Users/luke/urbit/rote-app/src/js/components/deck-viewer.js";
             function Card({card, answerShown, reveal}) {
                 return (
-                    react.createElement('div', { className: "ba-xl pa4 mw6 w5 white-d " + (answerShown ? "" : "pointer"), onClick: reveal, __self: this, __source: {fileName: _jsxFileName$5, lineNumber: 7}}
-                        , react.createElement(reactMarkdown, { className: "pa4 tc" , source: card.front, linkTarget: "_blank", __self: this, __source: {fileName: _jsxFileName$5, lineNumber: 8}} )
-                        , react.createElement('div', { style: {visibility: answerShown ? "" : "hidden"}, __self: this, __source: {fileName: _jsxFileName$5, lineNumber: 9}}
-                            , react.createElement(reactMarkdown, { className: "pa4 gray3 tc"  , source: card.back, linkTarget: "_blank", __self: this, __source: {fileName: _jsxFileName$5, lineNumber: 10}} )
+                    react.createElement('div', { className: 'ba-xl pa4 mw6 w5 white-d ' + (answerShown ? '' : 'pointer'), onClick: reveal, __self: this, __source: {fileName: _jsxFileName$5, lineNumber: 7}}
+                        , react.createElement(reactMarkdown, { className: "pa4 tc" , source: card.front, linkTarget: '_blank', __self: this, __source: {fileName: _jsxFileName$5, lineNumber: 8}} )
+                        , react.createElement('div', { style: {visibility: answerShown ? '' : 'hidden'}, __self: this, __source: {fileName: _jsxFileName$5, lineNumber: 9}}
+                            , react.createElement(reactMarkdown, { className: "pa4 gray3 tc"  , source: card.back, linkTarget: '_blank', __self: this, __source: {fileName: _jsxFileName$5, lineNumber: 10}} )
                         )
                     )
                 )
@@ -61343,9 +61343,9 @@
                         , react.createElement('div', { className: "flex justify-between mb4"  , __self: this, __source: {fileName: _jsxFileName$5, lineNumber: 27}}
                             , 
                                 [
-                                    {label: "← prev ", onClick: prevCard},
-                                    {label: "⚁ random", onClick: randCard},
-                                    {label: "next →", onClick: nextCard},
+                                    {label: '← prev ', onClick: prevCard},
+                                    {label: '⚁ random', onClick: randCard},
+                                    {label: 'next →', onClick: nextCard},
                                 ].map(b => (
                                     react.createElement('div', { key: b.label, className: "flex", __self: this, __source: {fileName: _jsxFileName$5, lineNumber: 34}}
                                         , react.createElement('a', {
@@ -61410,7 +61410,7 @@
                 return state.setIn(['decks', deck.id, 'answerShown'], true)
 
               default:
-                console.error(`unrecognized action type "${action.type}"`);
+                console.error(`unrecognized action type '${action.type}'`);
                 console.error(action.payload);
               }
             }
@@ -61481,18 +61481,18 @@
             }
 
             const DeckRecord = Record({
-              id: "<?>",
-              path: "<?>",
-              title: "<?>",
-              ship: "<?>",
+              id: '<?>',
+              path: '<?>',
+              title: '<?>',
+              ship: '<?>',
               cards: List([]),
               cardIndex: 0,
               answerShown: false,
             });
 
             const CardRecord = Record({
-              front: "<?>",
-              back: "<?>",
+              front: '<?>',
+              back: '<?>',
             });
 
             function deckToRecord(deck) {
@@ -61522,7 +61522,7 @@
                 // TODO
               }
 
-              bind(path, method, ship = this.authTokens.ship, appl = "rote", success, fail) {
+              bind(path, method, ship = this.authTokens.ship, appl = 'rote', success, fail) {
                 window.urb.subscribe(ship, appl, path,
                   fail,
                   event => success({
@@ -61546,7 +61546,7 @@
 
               initBindings(onEvent, onErr) {
                 if (!api$1.authTokens) {
-                  console.error("~~~ ERROR: Must set api.authTokens before operation ~~~");
+                  console.error('~~~ ERROR: Must set api.authTokens before operation ~~~');
                   return
                 }
                 this.bind('/primary', 'PUT', api$1.authTokens.ship, 'rote',
@@ -61573,7 +61573,7 @@
                     deck: path.split('/')[1],
                   }
                 };
-                this.action("rote", "rote-action", action)
+                this.action('rote', 'rote-action', action)
                     .catch(console.log)
                     .then(callback);
               }
@@ -61589,6 +61589,6 @@
 
             reactDom.render((
               react.createElement(Root$1, {__self: undefined, __source: {fileName: _jsxFileName$7, lineNumber: 11}} )
-            ), document.querySelectorAll("#root")[0]);
+            ), document.querySelectorAll('#root')[0]);
 
 })));

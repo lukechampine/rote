@@ -7,7 +7,7 @@ export class GroupFilter extends Component {
       open: false,
       selected: [],
       groups: [],
-      searchTerm: "",
+      searchTerm: '',
       results: []
     }
     this.toggleOpen = this.toggleOpen.bind(this);
@@ -21,7 +21,7 @@ export class GroupFilter extends Component {
   componentDidMount() {
     document.addEventListener('mousedown', this.handleClickOutside);
     this.groupIndex();
-    let selected = localStorage.getItem("urbit-selectedGroups");
+    let selected = localStorage.getItem('urbit-selectedGroups');
     if (selected) {
       this.setState({selected: JSON.parse(selected)}, (() => {
         window.api.setSelected(this.state.selected);
@@ -59,7 +59,7 @@ export class GroupFilter extends Component {
       eachGroup.push(each);
       let name = each;
       if (associations[each].metadata) {
-        name = (associations[each].metadata.title !== "")
+        name = (associations[each].metadata.title !== '')
           ? associations[each].metadata.title : name;
       }
       eachGroup.push(name);
@@ -89,12 +89,12 @@ export class GroupFilter extends Component {
       selected.push(group);
     }
     this.setState({
-      searchTerm: "",
+      searchTerm: '',
       selected: selected,
       results: []
     }, (() => {
         window.api.setSelected(this.state.selected);
-        localStorage.setItem("urbit-selectedGroups", JSON.stringify(this.state.selected));
+        localStorage.setItem('urbit-selectedGroups', JSON.stringify(this.state.selected));
     }))
   }
 
@@ -105,46 +105,46 @@ export class GroupFilter extends Component {
     });
     this.setState({selected: selected}, (() => {
       window.api.setSelected(this.state.selected);
-      localStorage.setItem("urbit-selectedGroups", JSON.stringify(this.state.selected));
+      localStorage.setItem('urbit-selectedGroups', JSON.stringify(this.state.selected));
     }))
   }
 
   render() {
     const { props, state } = this;
 
-    let currentGroup = "All Groups";
+    let currentGroup = 'All Groups';
 
     if (state.selected.length > 0) {
       let titles = state.selected.map((each) => {
         return each[1];
       })
-      currentGroup = titles.join(" + ");
+      currentGroup = titles.join(' + ');
     }
 
     let buttonOpened = (state.open)
-      ? "bg-gray5 bg-gray1-d white-d" : "hover-bg-gray5 hover-bg-gray1-d white-d";
+      ? 'bg-gray5 bg-gray1-d white-d' : 'hover-bg-gray5 hover-bg-gray1-d white-d';
 
     let dropdownClass = (state.open)
-      ? "absolute db z-2 bg-white bg-gray0-d white-d ba b--gray3 b--gray1-d"
-      : "dn";
+      ? 'absolute db z-2 bg-white bg-gray0-d white-d ba b--gray3 b--gray1-d'
+      : 'dn';
 
     let inviteCount = (props.invites && Object.keys(props.invites).length > 0)
-      ? <template className="dib fr">
-        <p className="dib bg-green2 bg-gray2-d white fw6 ph1 br1 v-mid" style={{ marginBottom: 2 }}>
+      ? <template className='dib fr'>
+        <p className='dib bg-green2 bg-gray2-d white fw6 ph1 br1 v-mid' style={{ marginBottom: 2 }}>
           {Object.keys(props.invites).length}
         </p>
-        <span className="dib v-mid ml1">
+        <span className='dib v-mid ml1'>
           <img
-          className="v-mid"
-          src="/~launch/img/Chevron.png"
+          className='v-mid'
+          src='/~launch/img/Chevron.png'
           style={{ height: 16, width: 16, paddingBottom: 1 }}
           />
         </span>
       </template>
-      : <template className="dib fr" style={{paddingTop: 1}}>
-        <span className="dib v-top ml1">
-          <img className="v-mid"
-          src="/~launch/img/Chevron.png"
+      : <template className='dib fr' style={{paddingTop: 1}}>
+        <span className='dib v-top ml1'>
+          <img className='v-mid'
+          src='/~launch/img/Chevron.png'
           style={{ height: 16, width: 16, paddingBottom: 1 }}
           />
         </span>
@@ -158,14 +158,14 @@ export class GroupFilter extends Component {
         return(
           <li
           key={group[0]}
-          className="tl list white-d f9 pv2 ph3 pointer hover-bg-gray4 hover-bg-gray1-d inter" onClick={() => this.addGroup(group)}>
-            <span className="mix-blend-diff white">{(group[1]) ? group[1] : group[0]}</span>
+          className='tl list white-d f9 pv2 ph3 pointer hover-bg-gray4 hover-bg-gray1-d inter' onClick={() => this.addGroup(group)}>
+            <span className='mix-blend-diff white'>{(group[1]) ? group[1] : group[0]}</span>
           </li>
         )
       }))
       searchResults = (
-        <div className={"tl absolute bg-white bg-gray0-d white-d pv3 z-1 w-100 ba b--gray4 b--white-d overflow-y-scroll"} style={{maxWidth: "15.67rem", maxHeight: "8rem"}}>
-          <p className="f9 tl gray2 ph3 pb2">Groups</p>
+        <div className={'tl absolute bg-white bg-gray0-d white-d pv3 z-1 w-100 ba b--gray4 b--white-d overflow-y-scroll'} style={{maxWidth: '15.67rem', maxHeight: '8rem'}}>
+          <p className='f9 tl gray2 ph3 pb2'>Groups</p>
           {groupResults}
         </div>
     )
@@ -177,12 +177,12 @@ export class GroupFilter extends Component {
         return(
           <span
             key={each[0]}
-            className={"f9 inter black pa2 bg-gray5 bg-gray1-d " +
-            "ba b--gray4 b--gray2-d white-d dib mr2 mt2 c-default"}
+            className={'f9 inter black pa2 bg-gray5 bg-gray1-d ' +
+            'ba b--gray4 b--gray2-d white-d dib mr2 mt2 c-default'}
           >
           {name}
           <span
-          className="white-d ml3 mono pointer"
+          className='white-d ml3 mono pointer'
           onClick={e => this.deleteGroup(each)}>
             x
           </span>
@@ -191,8 +191,8 @@ export class GroupFilter extends Component {
       })
       selectedGroups = (
         <div className={
-          "f9 gray2 bb bl br b--gray3 b--gray2-d bg-gray0-d " +
-          "white-d pa3 db w-100 inter bg-gray5 lh-solid tl"
+          'f9 gray2 bb bl br b--gray3 b--gray2-d bg-gray0-d ' +
+          'white-d pa3 db w-100 inter bg-gray5 lh-solid tl'
         }>
         {allSelected}
         </div>
@@ -200,22 +200,22 @@ export class GroupFilter extends Component {
     }
 
     return (
-      <div className="ml1 dib">
+      <div className='ml1 dib'>
         <div className={buttonOpened}
         onClick={() => this.toggleOpen()}
         ref={(el) => this.toggleButton = el}>
-        <p className="dib f9 pointer pv1 ph2 mw5 truncate v-mid">{currentGroup}</p>
+        <p className='dib f9 pointer pv1 ph2 mw5 truncate v-mid'>{currentGroup}</p>
         </div>
         <div className={dropdownClass}
-          style={{ maxHeight: "24rem", width: 285 }}
+          style={{ maxHeight: '24rem', width: 285 }}
           ref={(el) => { this.dropdown = el }}>
-          <p className="tc bb b--gray3 b--gray1-d gray3 pv4 f9">Group Select and Filter</p>
-          <a href="/~groups" className="ma4 bg-gray5 bg-gray1-d f9 tl pa1 br1 db no-underline" style={{paddingLeft: "6.5px", paddingRight: "6.5px"}}>Manage all Groups
+          <p className='tc bb b--gray3 b--gray1-d gray3 pv4 f9'>Group Select and Filter</p>
+          <a href='/~groups' className='ma4 bg-gray5 bg-gray1-d f9 tl pa1 br1 db no-underline' style={{paddingLeft: '6.5px', paddingRight: '6.5px'}}>Manage all Groups
           {inviteCount}
           </a>
-          <p className="pt4 gray3 f9 tl mh4">Filter Groups</p>
-          <div className="relative w-100 ph4 pt2 pb4">
-            <input className="ba b--gray3 white-d bg-gray0-d inter w-100 f9 pa2" style={{boxSizing: "border-box"}} placeholder="Group name..."
+          <p className='pt4 gray3 f9 tl mh4'>Filter Groups</p>
+          <div className='relative w-100 ph4 pt2 pb4'>
+            <input className='ba b--gray3 white-d bg-gray0-d inter w-100 f9 pa2' style={{boxSizing: 'border-box'}} placeholder='Group name...'
           onChange={this.search}
           value={state.searchTerm}
           />
