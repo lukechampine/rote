@@ -1,7 +1,6 @@
 
 import React, { useReducer, useEffect } from 'react';
 import { BrowserRouter, Route } from "react-router-dom";
-import { api } from '../api';
 import { HeaderBar } from "./header-bar.js"
 import { Sidebar } from "./sidebar.js"
 import { ImportDeck } from "./import.js"
@@ -10,8 +9,6 @@ import { DeckViewer } from "./deck-viewer.js"
 function reducer(state, action) {
   if (action.type === 'init') {
     return { decks: action.payload }
-  } else if (action.type === 'import') {
-    return { decks: {...state.decks, [action.payload.deck.id]: action.payload.deck}}
   }
 
   const deck = state.decks[action.payload.id]
@@ -42,13 +39,41 @@ function reducer(state, action) {
       ...deck,
       answerShown: true,
     }}}
+
+  case 'subscribe-event':
+      switch (action.payload.from.path) {
+      case '/primary':
+        let deck = action.payload.data
+        deck.id = `${deck.ship}/${deck.path}`
+        return { decks: {...state.decks, [deck.id]: deck}}
+      default:
+        console.error(`unrecognized subscription path "${action.payload.from.path}"`)
+      }
+
+  default:
+    console.error(`unrecognized action type "${action.type}"`)
+    console.error(action.payload)
   }
 }
 
 export function Root() {
   const [state, dispatch] = useReducer(reducer, {decks: {}});
+
+  // set up subscriptions
   useEffect(() => {
-    api.fetchDecks(decks => dispatch({type: 'init', payload: decks}))
+    if (!api.authTokens) {
+      console.error("~~~ ERROR: Must set api.authTokens before operation ~~~")
+      return
+    }
+    api.bind('/primary', 'PUT', api.authTokens.ship, 'rote',
+      e => dispatch({type: 'subscribe-event', payload: e}),
+      e => dispatch({type: 'subscribe-error', payload: e}),
+    )
+  }, [])
+
+  // fetch initial state
+  useEffect(() => {
+    window.api.fetchDecks(decks => dispatch({type: 'init', payload: decks}))
   }, [])
 
   return (
@@ -71,13 +96,13 @@ export function Root() {
             </div>
           </div>
         )}}
-      /> 
+      />
 
       <Route exact path="/~rote/import" render={ (props) => {
         return (
           <div className="cf w-100 flex ba-m ba-l ba-xl b--gray4 b--gray1-d br1 h-100 h-100-minus-40-m h-100-minus-40-l h-100-minus-40-xl">
             <Sidebar decks={state.decks}/>
-            <ImportDeck dispatch={dispatch} />
+            <ImportDeck />
           </div>
         )
       }}/>

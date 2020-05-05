@@ -141,9 +141,11 @@
   ::
   |_  =bowl:gall
   ::
-  :: First we define a few aliases. This isn't documented anywhere, but when '*='
-  :: is the first thing in a door, it defines aliases. (Aliases don't count as
-  :: arms, so they don't prevent our door from being an agent.)
+  :: First we define a few aliases using '+*', which is kind of a strange rune.
+  :: Technically, it's not a rune at all; it's better to think of it as a macro
+  :: that inserts '=*' expressions into each of the door's arms. That's why it
+  :: doesn't prevent our door from being a Gall agent; it's not actually adding
+  :: any arms, just modifying the arms that are already there.
   ::
   +*  this  .                                  :: our agent
       rc    ~(. +> bowl)                       :: +> resolves to our helper door, which we turn into a core by passing it our bowl
@@ -286,15 +288,23 @@
           %print-state
         ~&  state
         `this
+      ::
+          %reset-state
+        `this(state *versioned-state)
       ==
         ::
-        :: %rote-action is where we handle pokes from other agents. Like the
-        :: %launch app, we've defined a set of possible actions, so we'll do a
-        :: type-switch to dispatch on those. But since this tends to involve a
-        :: lot of logic, we call out to one of our helper arms to avoid
+        :: %rote-action is where we handle pokes from other agents. Somewhat
+        :: unintuitively, that includes the frontend! When the frontend is just
+        :: accessing resources via GET requests, those pokes will be routed to
+        :: the '%handle-http-request' arm below; but when it needs to initiate
+        :: some kind of action, it uses PUT requests to send arbitrary pokes.
+        ::
+        :: Like the %launch app, we've defined a set of possible actions, so
+        :: we'll do a type-switch to dispatch on those. But since this tends to
+        :: involve a lot of logic, we call out to one of our helper arms to avoid
         :: cluttering the agent definition.
         ::
-        :: Here, we use the '=^' rune, which is kinda complicated, but
+        :: Here, we use the '=^' rune, which is a little complicated, but also
         :: frequently used in Gall apps. Much like how an agent's arms produce a
         :: new agent and a list of effects, '=^' pins a new face to the subject
         :: and rebinds an existing face. The values of these faces come from the
@@ -312,6 +322,9 @@
         :: and the rest is extracted into one of our helper functions.
         ::
         %handle-http-request
+      ::
+      :: HTTP requests don't affect our state.
+      ::
       :_  this
       ::
       :: Assert the vase's type and extract its data, binding it to two faces,
@@ -345,13 +358,21 @@
         [%rotetile ~]  :: TODO: not clear what the function of this is
       `this
     ::
+    :: This is the path that the frontend subscribes on for deck updates.
+    :: When we receive a deck from another ship, we'll use this subscription
+    :: to tell the frontend to refresh.
+    ::
+    :: TODO: better name?
+    ::
+        [%primary ~]
+      `this
+    ::
     :: Another ship is subscribing to one of our decks! As with %rote-action,
     :: we'll implement the logic for this in one of our helper arms.
     ::
         [%deck @ ~]
       =/  name  i.t.path
-      =^  cards  state
-        (watch-deck:rc name)
+      =^  cards  state  (watch-deck:rc name)
       [cards this]
     ==
   ::
@@ -366,16 +387,16 @@
     ?+  -.sign  (on-agent:def wire sign)
         ::
         :: After we subscribe to a deck, the other ship will send us the deck
-        :: data. We extract the deck's name from the wire, and pass it to
-        :: 'handle-import-deck' to add it to our state.
+        :: data. We extract the deck's name from the wire, and then hand it off
+        :: to 'handle-import-deck', which adds it to our state.
         ::
         %fact
       ?+  wire  (on-agent:def wire sign)
           [%import @ @ ~]
         ?>  ?=(%rote-deck p.cage.sign)
         =/  name  i.t.t.wire
-        =^  cards  state
-          (handle-import-deck:rc name !<(deck:rote q.cage.sign))
+        =/  deck  !<(deck:rote q.cage.sign)
+        =^  cards  state  (handle-import-deck:rc name deck)
         [cards this]
       ==
     ==
@@ -449,18 +470,25 @@
   :: When there's a hyphen in the name, it's interpreted as a directory, so
   :: Arvo will look for this mark in /mar/rote/deck.hoon.
   ::
+  :: TODO: explain the '~'s
+  ::
   :~  [%give %fact ~ %rote-deck !>(deck)]
       [%give %kick ~ ~]
   ==
 ::
 :: Importing a deck -- again, pretty simple, we just need to insert the deck
-:: into our state.
+:: into our state. We also send an update to the '%primary' subscriber, i.e.
+:: our frontend, so that it can refresh and display the new deck.
 ::
 ++  handle-import-deck
   |=  [name=@ta =deck:rote]
   ^-  (quip card _state)
   =/  ds  (~(put by decks.state) [author.deck name] deck)
-  `state(decks ds)
+  :_  state(decks ds)
+  ::
+  :: '[foo]~' is irregular syntax for '[foo ~]', i.e. a list of one element.
+  ::
+  [[%give %fact [/primary]~ %rote-deck !>(deck)]]~
 ::
 :: The handler for HTTP requests. There are two major cases we need to handle:
 :: static resources (HTML/JS/CSS/images) and deck data.
