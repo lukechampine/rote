@@ -1,3 +1,38 @@
+import { Map, Record, List } from 'immutable'
+
+const DeckRecord = Record({
+  id: "<?>",
+  path: "<?>",
+  title: "<?>",
+  ship: "<?>",
+  cards: List([]),
+  cardIndex: 0,
+  answerShown: false,
+})
+
+const CardRecord = Record({
+  front: "<?>",
+  back: "<?>",
+})
+
+function deckToRecord(deck) {
+  return DeckRecord({
+    id: `${deck.ship}/${deck.path}`,
+    path: deck.path,
+    title: deck.title,
+    ship: deck.ship,
+    cards: List(deck.cards.split('===').map(section => {
+      const i = section.indexOf('---')
+      return CardRecord({
+        front: section.slice(0, i).trim(),
+        back: section.slice(i+3, -1).trim(),
+      })
+    })),
+    cardIndex: 0,
+    answerShown: false,
+  })
+}
+
 class UrbitApi {
   setAuthTokens(authTokens) {
     this.authTokens = authTokens;
@@ -10,14 +45,10 @@ class UrbitApi {
   bind(path, method, ship = this.authTokens.ship, appl = "rote", success, fail) {
     window.urb.subscribe(ship, appl, path,
       fail,
-      (event) => { success({
-          data: event,
-          from: {
-            ship,
-            path
-          }
-        });
-      },
+      event => success({
+        data: event,
+        from: {ship, path},
+      }),
       fail,
     );
   }
@@ -33,29 +64,25 @@ class UrbitApi {
     return response;
   }
 
+  initBindings(onEvent, onErr) {
+    if (!api.authTokens) {
+      console.error("~~~ ERROR: Must set api.authTokens before operation ~~~")
+      return
+    }
+    this.bind('/primary', 'PUT', api.authTokens.ship, 'rote',
+      e => onEvent(deckToRecord(e.data)),
+      onErr,
+    )
+  }
+
   fetchDecks(callback) {
     fetch('/~rote/decks.json')
     .then((response) => response.json())
     .then(json => {
-      callback(json.reduce((decks, deck) => {
-        const key = `${deck.ship}/${deck.path}`
-        decks[key] = {
-          id: `${deck.ship}/${deck.path}`,
-          path: deck.path,
-          title: deck.title,
-          ship: deck.ship,
-          cards: deck.cards.split('===').map(section => {
-              const i = section.indexOf('---')
-              return {
-                front: section.slice(0, i).trim(),
-                back: section.slice(i+3, -1).trim(),
-              }
-            }),
-          cardIndex: 0,
-          answerShown: false,
-        }
-        return decks
-      }, {}))
+      callback(json.reduce((decks, raw) => {
+        const deck = deckToRecord(raw)
+        return decks.set(deck.id, deck)
+      }, Map({})))
     })
   }
 

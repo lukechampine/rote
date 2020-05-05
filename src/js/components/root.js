@@ -1,54 +1,50 @@
 
-import React, { useReducer, useEffect } from 'react';
-import { BrowserRouter, Route } from "react-router-dom";
+import React, { useReducer, useEffect } from 'react'
+import { BrowserRouter, Route } from 'react-router-dom'
+import { Map, Record, List } from 'immutable'
 import { HeaderBar } from "./header-bar.js"
 import { Sidebar } from "./sidebar.js"
 import { ImportDeck } from "./import.js"
 import { DeckViewer } from "./deck-viewer.js"
 
+const StateRecord = Record({
+  decks: Map({}),
+})
+
 function reducer(state, action) {
   if (action.type === 'init') {
-    return { decks: action.payload }
+    return state.set('decks', action.payload)
+  } else if (action.type === 'subscribe-event') {
+    const deck = action.payload
+    return state.setIn(['decks', deck.id], deck)
   }
 
-  const deck = state.decks[action.payload.id]
+  const deck = state.decks.get(action.payload.id)
+  const len = deck.cards.size
   const setIndex = (i) => {
-    return {...state, decks: {...state.decks, [deck.id]: {
-      ...deck,
+    return state.mergeIn(['decks', deck.id], {
       cardIndex: i,
-      answerShown: false, // hide answer when switching cards
-    }}}
+      answerShown: false, // hide answer when changing cards
+    })
   }
+
   switch (action.type) {
   case 'next-card':
-    return setIndex((deck.cardIndex+1) % deck.cards.length)
+    return setIndex((deck.cardIndex+1) % len)
   
   case 'prev-card':
-    return setIndex((deck.cardIndex+deck.cards.length-1) % deck.cards.length)
+    return setIndex((deck.cardIndex+len-1) % len)
   
   case 'rand-card':
     // make sure we select a different card -- unless there's only one, of course
     let newIndex
     do {
-        newIndex = Math.floor(Math.random() * deck.cards.length)
-    } while (deck.cards.length > 1 && newIndex === deck.cardIndex)
+        newIndex = Math.floor(Math.random() * len)
+    } while (len > 1 && newIndex === deck.cardIndex)
     return setIndex(newIndex)
   
   case 'reveal-answer':
-    return {...state, decks: {...state.decks, [deck.id]: {
-      ...deck,
-      answerShown: true,
-    }}}
-
-  case 'subscribe-event':
-      switch (action.payload.from.path) {
-      case '/primary':
-        let deck = action.payload.data
-        deck.id = `${deck.ship}/${deck.path}`
-        return { decks: {...state.decks, [deck.id]: deck}}
-      default:
-        console.error(`unrecognized subscription path "${action.payload.from.path}"`)
-      }
+    return state.setIn(['decks', deck.id, 'answerShown'], true)
 
   default:
     console.error(`unrecognized action type "${action.type}"`)
@@ -57,15 +53,11 @@ function reducer(state, action) {
 }
 
 export function Root() {
-  const [state, dispatch] = useReducer(reducer, {decks: {}});
+  const [state, dispatch] = useReducer(reducer, StateRecord({}));
 
   // set up subscriptions
   useEffect(() => {
-    if (!api.authTokens) {
-      console.error("~~~ ERROR: Must set api.authTokens before operation ~~~")
-      return
-    }
-    api.bind('/primary', 'PUT', api.authTokens.ship, 'rote',
+    api.initBindings(
       e => dispatch({type: 'subscribe-event', payload: e}),
       e => dispatch({type: 'subscribe-error', payload: e}),
     )
@@ -109,8 +101,8 @@ export function Root() {
 
       <Route exact path="/~rote/deck/:ship/:path" render={ (props) => {
         const id = `${props.match.params.ship}/${props.match.params.path}`
-        const deck = state.decks[id]
-        if (deck === undefined) {
+        const deck = state.decks.get(id)
+        if (!deck) {
           return <p>Loading decks...</p>
         }
         return (

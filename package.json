@@ -36,6 +36,7 @@
   },
   "dependencies": {
     "fs-extra": "^8.1.0",
+    "immutable": "^4.0.0-rc.12",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
     "react-hook-mousetrap": "^2.0.2",

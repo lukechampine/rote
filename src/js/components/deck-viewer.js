@@ -43,7 +43,7 @@ export function DeckViewer({deck, dispatch}) {
             </div>
             <div className="flex-col center lh-solid h-100">
                 <Card
-                    card={deck.cards[deck.cardIndex]}
+                    card={deck.cards.get(deck.cardIndex)}
                     answerShown={deck.answerShown}
                     reveal={reveal}
                 />

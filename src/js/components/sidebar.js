@@ -15,7 +15,7 @@ function SidebarItem({deck}) {
 }
 
 export function Sidebar({decks, selected}) {
-  const deckList = Object.values(decks).sort((a, b) => a.title.localeCompare(b.title))
+  const deckList = decks.sort((a, b) => a.title.localeCompare(b.title)).toList()
   return (
     <div className="bn br-m br-l br-xl b--gray4 b--gray1-d lh-copy min-w14 h-100 flex-shrink-0 pt3 pt0-m pt0-l pt0-xl relative overflow-y-hidden dn-s flex-basis-100-s flex-basis-250-ns">
       <div className="w-100 f9">
