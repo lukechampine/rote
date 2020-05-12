@@ -271,7 +271,8 @@
         ::
         ::    > :rote &foo 1
         ::
-        :: This will be sent as '[%foo 1]'.
+        :: This will be sent as '[%foo 1]'. Note, however, that this requires
+        :: a 'foo' mark to exist in the /mar directory.
         ::
         %noun
       ::
@@ -352,23 +353,40 @@
     ==
   ::
   :: on-watch handles subscriptions, which we handle by switching on the
-  :: subscription path.
+  :: subscription path. The path serves two purposes: it tells us the "type"
+  :: of the request, and it tells us where to send updates. In the general
+  :: case, you would want to store these paths, so that you can reply to them
+  :: later; but this is usually unnecessary, as the path is a single hard-coded
+  :: element (e.g. '%primary') and can simply be inlined wherever it's needed,
+  :: or is constructed deterministically from information that can be found
+  :: elsewhere (such as the '%deck' path being constructed from the deck's ship
+  :: and name).
   ::
   ++  on-watch
     |=  =path
     ^-  (quip card _this)
     ?+    path  (on-watch:def path)
-        [%http-response *]  :: TODO: not clear what the function of this is
+    ::
+    :: This subscription is requested by Eyre. I *think* the purpose of this
+    :: is to tell us what path to send our response data to, but this is
+    :: handled for us anyway in 'give-simple-payload:app' -- so we don't
+    :: need to do anything here.
+    ::
+        [%http-response *]
       `this
     ::
-        [%rotetile ~]  :: TODO: not clear what the function of this is
+    :: Similarly, this subscription is requested by the Launch app; it's
+    :: telling us where to send tile-related updates. In fact, *we* told
+    :: Launch to subscribe to this path, back in our 'on-init' arm. Since we
+    :: don't have a fancy tile (yet) we don't need to do anything here.
+    ::
+        [%rotetile ~]
       `this
     ::
     :: This is the path that the frontend subscribes on for deck updates.
     :: When we receive a deck from another ship, we'll use this subscription
-    :: to tell the frontend to refresh.
-    ::
-    :: TODO: better name?
+    :: to tell the frontend to refresh. ('primary' is an arbitrary name; it
+    :: just needs to match the name we use in the frontend.)
     ::
         [%primary ~]
       `this
@@ -394,7 +412,8 @@
         ::
         :: After we subscribe to a deck, the other ship will send us the deck
         :: data. We extract the deck's name from the wire, and then hand it off
-        :: to 'handle-import-deck', which adds it to our state.
+        :: to 'handle-import-deck', which adds it to our state and pushes it to
+        :: the '%primary' subscriber.
         ::
         %fact
       ?+  wire  (on-agent:def wire sign)
@@ -451,8 +470,9 @@
       :: a '%watch' card that contains the subscription path and is identified
       :: by a unique wire. Gall and Arvo will route this card to the %rote app
       :: on the other ship, where it will be handled by their 'on-watch' arm.
-      :: Finally, 'on-watch' will send a '%fact' sign back to us, which will be
-      :: handled by our 'on-agent' arm.
+      :: Finally, 'on-watch' will send a '%fact' sign back to us, which Arvo
+      :: and Gall will pair with our unique wire; this pair is then handled by
+      :: our 'on-agent' arm.
       ::
       %import
     ?>  (team:title our.bowl src.bowl)
@@ -472,11 +492,48 @@
   =/  =deck:rote  (~(got by local-decks) name)
   :_  state
   ::
-  :: %rote-deck is not an arbitrary symbol; it must refer to a Clay mark.
+  :: The delivery of cards is somewhat nuanced, so bear with me. Cards are
+  :: addressed to a set of subscription paths on a set of ships. In practice,
+  :: you almost always address cards to a single path or to '~', and to a single
+  :: ship or '~'. This sentinel, '~', means either "return to sender" or
+  :: "broadcast," depending on whether the card is returned from 'on-watch' or
+  :: another arm. Let's break it down by card type.
+  ::
+  :: The '%fact' card looks like this:
+  ::
+  ::   [%give %fact <paths> <mark> <vase>]
+  ::
+  :: You cannot specify the set of recipient ships in a '%fact' card. This is
+  :: because the recipients are always implied by the context. If the card is
+  :: returned from 'on-watch' and 'paths' is '~', then the card is sent to a
+  :: single ship: the ship who sent the '%watch' that triggered the 'on-watch'.
+  :: '~' acts as a sentinel value here; the other ship will actually receive a
+  :: card addressed to the same path it subscribed to. Outside of 'on-watch',
+  :: '~' is illegal, and will probably cause a crash. You must provide an
+  :: explicit set of paths, and the '%fact' will be sent to all ships subscribed
+  :: to those paths. It's ok to use explicit paths in 'on-watch'; they will be
+  :: broadcast to all ships as usual.
+  ::
+  :: The '%kick' card looks like this:
+  ::
+  ::   [%give %kick <paths> <ships>]
+  ::
+  :: Unlike '%fact', the set of recipients is not implied by context. For
+  :: example, you can easily imagine a "ban" command, handled by 'on-poke',
+  :: that kicks a specific ship. The sentinel value '~' can be used for either
+  :: the paths or the ships, or both. Within 'on-watch', '~' refers to the
+  :: subscription path (as in '%fact'), as well as the subscribing ship. Outside
+  :: 'on-watch', '~' means "all paths" and "all ships." Thus, you can kick all
+  :: paths on a particular ship, or all ships on a particular path, or all paths
+  :: on all ships.
+  ::
+  :: So: here, we are using '~' with '%fact' to send a deck to the subscriber,
+  :: down the same path they subscribed to; and then using '~' with '%kick' to
+  :: immediately kick the subscribing ship from that same path.
+  ::
+  :: Lastly: %rote-deck is not an arbitrary symbol; it's a proper Clay mark.
   :: When there's a hyphen in the name, it's interpreted as a directory, so
   :: Arvo will look for this mark in /mar/rote/deck.hoon.
-  ::
-  :: TODO: explain the '~'s
   ::
   :~  [%give %fact ~ %rote-deck !>(deck)]
       [%give %kick ~ ~]
