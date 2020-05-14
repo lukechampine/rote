@@ -78,19 +78,6 @@
   /^  (map knot @)
   /:  /===/app/rote/img  /_  /png/
 ::
-:: The last thing we load is our flashcard deck files. This is a bit unorthodox;
-:: the Right Way To Do It would be to query Clay for the contents of /decks, and
-:: then parse each listed file and add it to our app state. Unfortunately, I
-:: wasn't able to get that working in time, so instead, we just punt it to Ford.
-:: This works better than you might think, as Ford will automatically rebuild
-:: our app whenever we modify the /decks directory! But it does mean that local
-:: decks and remote decks are stored in two different places, which is ugly.
-::
-/=  local-decks-udon
-  /^  (map knot @)
-  /:  /===/app/rote/decks  /_  /udon/
-::
-::
 :: Okay, done with importing. Our next step is to define a few local types.
 :: These don't need to go in /sur, because they're only used in this file.
 ::
@@ -116,7 +103,10 @@
 ::
 :: Our app's state is a set of decks, keyed by their owner and name.
 ::
-+$  state-zero  decks=(map [@p @ta] deck:rote)
++$  state-zero
+  $:  local-decks=(map @ta deck:rote)
+      remote-decks=(map [@p @ta] deck:rote)
+  ==
 +$  versioned-state
   $%
     [%0 state-zero]
@@ -131,6 +121,8 @@
 :: they can refer to e.g. 'decks' instead of 'decks.state'), but as usual, my
 :: preference is to be explicit.
 ::
+:: TODO: I haven't been able to get this to work with multiple versioned states.
+::
 =|  state=versioned-state
 ::
 :: Finally, we come to the definition of the agent itself. What we're actually
@@ -143,14 +135,16 @@
 =<
   ::
   :: Agents are doors; their sample is a "bowl," which contains useful OS stuff
-  :: like entropy, the current time, and the name of our ship.
+  :: like entropy, the current time, and the name of our ship. Here we use some
+  :: irregular syntax: '=foo' means 'foo=foo'. This is a common idiom when you
+  :: know that you won't need to reference the 'foo' type again.
   ::
   |_  =bowl:gall
   ::
   :: First we define a few aliases using '+*', which is kind of a strange rune.
   :: Technically, it's not a rune at all; it's better to think of it as a macro
   :: that inserts '=*' expressions into each of the door's arms. That's why it
-  :: doesn't prevent our door from being a Gall agent; it's not actually adding
+  :: doesn't prevent our door from being a Gall agent: it's not actually adding
   :: any arms, just modifying the arms that are already there.
   ::
   +*  this  .                                  :: our agent
@@ -171,9 +165,9 @@
     ::
     ^-  (quip card _this)
     ::
-    :: Our agent doesn't need to do anything to initialize its state: recall
-    :: that 'state' is already initialized to the the bunt value of a map (i.e.
-    :: an empty map), which is what we want. We do, however, need to emit two
+    :: Our agent doesn't need to do anything to initialize its state; recall
+    :: that 'state' is already initialized to the the bunt value of its type
+    :: (i.e. two empty maps) which is what we want. We do, however, need to emit
     :: effects: we need to tell Eyre (%e) to route HTTP requests to /~rote to
     :: our app, and we need to tell the launch agent where to find our tile, so
     :: it can include it in the Landscape home screen.
@@ -196,6 +190,12 @@
       ::
       [%pass /bind %arvo %e %connect [~ /'~rote'] %rote]
       ::
+      :: We also need to query Clay, asking it for the contents of the directory
+      :: where we store our own decks. Since we reuse this card in a few places
+      :: it's defined in our helper core.
+      ::
+      clay-sing:rc
+      ::
       :: The structure for an agent card is necessarily more generic than an
       :: Arvo card. Since it has to work with arbitrary agents, it uses a
       :: dynamic "cage" value rather than a tagged union of all legal values.
@@ -211,9 +211,7 @@
       :: another tagged union, this one of possible actions we can request. We
       :: construct an action that tells %launch to add our tile to Landscape;
       :: then we wrap the action in its type to produce a vase; then we pair the
-      :: vase with the %launch-action mark to form a cage. (=cage is shorthand
-      :: for cage=cage; it's a common idiom when you're defining a value of a
-      :: certain type and you know you won't need to refer to that type again.)
+      :: vase with the %launch-action mark to form a cage.
       ::
       =/  action  [%add %rote /rotetile '/~rote/js/tile.js']
       =/  =cage  [%launch-action !>(action)]
@@ -221,34 +219,40 @@
     ==
   ::
   :: These arms are called when the app is upgraded. This will occur any time
-  :: you modify your app and commit the desk: first, on-save will be called to
+  :: you modify your app and commit the desk: first, 'on-save' will be called to
   :: store the previous state; then the app will be reloaded; then the previous
   :: state will be passed to the new on-load arm.
   ::
-  :: on-save rarely needs to be more sophisticated than '!>(state)', i.e. the
+  :: 'on-save' rarely needs to be more sophisticated than '!>(state)', i.e. the
   :: current state wrapped in its type.
   ::
-  :: on-load should type-switch on the value it's given, so that you can upgrade
-  :: appropriately based on what version you're upgrading from.
+  :: 'on-load' should type-switch on the value it's given, so that you can
+  :: upgrade appropriately based on what version you're upgrading from.
   ::
   ++  on-save  !>(state)
   ++  on-load
     |=  =vase
     ^-  (quip card _this)
+    ::
+    :: Regardless of what we load, we also need to emit the same Clay card as
+    :: in 'on-init', because if the app is upgraded, we'll want to fetch the
+    :: current directory contents again. We use an irregular form here to
+    :: create a list: '[foo]~' means '[foo ~]'.
+    :: 
+    :-  [clay-sing:rc]~
+    ::
+    :: This app only has one state version, so the "upgrade" logic is trivial:
+    :: just set 'state' equal to the contents of the provided vase.
+    ::
     =/  prev  !<(versioned-state vase)
     ?-  -.prev
         %0
-      ::
-      :: `this is a common expression in Gall apps: it's an irregular form that
-      :: expands to [~ this], i.e. returning a new agent, but no cards. In this
-      :: case, %0 is the latest version, so we pass the previous state through
-      :: unmodified.
-      ::
-      `this(state prev)
+      this(state prev)
     ==
   ::
-  :: on-poke is the main 'event handler' for your app. It's where you'll receive
-  :: input from the user (via either Dojo or Landscape) and from other ships.
+  :: 'on-poke' is one of the main "event handlers" for your app. It's where
+  :: you'll receive input from the user (via either Dojo or Landscape) and from
+  :: other ships.
   ::
   ++  on-poke
     |=  [=mark =vase]
@@ -256,8 +260,7 @@
     ::
     :: Switch on the mark; in other words, dispatch based on the type of action
     :: we're being asked to perform. If we don't recognize the action, default
-    :: to the on-poke arm from def. (Note that 'mark' does not mean a Clay
-    :: filetype here; it's just an alias for @tas.)
+    :: to the 'on-poke' arm from 'def'.
     ::
     ?+    mark  (on-poke:def mark vase)
         ::
@@ -272,7 +275,7 @@
         ::    > :rote &foo 1
         ::
         :: This will be sent as '[%foo 1]'. Note, however, that this requires
-        :: a 'foo' mark to exist in the /mar directory.
+        :: a 'foo' Clay mark to exist in the /mar directory.
         ::
         %noun
       ::
@@ -280,21 +283,20 @@
       :: i.e. that the request is either coming from our own ship, or from one
       :: of our moons. If the assert fails, we crash -- but don't worry,
       :: crashing isn't fatal here. The crash will be caught by Gall and
-      :: forwarded to our on-fail arm, so that we can process the error if we so
-      :: desire. (Usually, though, such errors are simply ignored.)
+      :: forwarded to our 'on-fail' arm, so that we can process the error if we
+      :: so desire. (Usually, though, such errors are simply ignored.)
       ::
       ?>  (team:title our.bowl src.bowl)
       ::
-      :: The only %noun poke we recognize is %print-state, which...prints the
-      :: current state. This isn't very useful in production, but I left it in
-      :: because it's useful to have when developing. When I need to debug
-      :: something, I often do so by adding a new case here and poking my app
-      :: manually from Dojo.
+      :: So, these pokes aren't very useful in production, but I left them in
+      :: because they're useful to have when developing/debugging. When I need
+      :: to debug something, I often do so by adding a new case here and poking
+      :: my app manually from Dojo.
       ::
       ?+    q.vase  (on-poke:def mark vase)
           %print-state
         ~&  state
-        `this
+        `this  :: irregular syntax for '[~ this]'
       ::
           %reset-state
         `this(state *versioned-state)
@@ -324,15 +326,12 @@
       =^  cards  state  (poke-rote-action:rc !<(action:rote vase))
       [cards this]
         ::
-        :: %handle-http-request is where we handle HTTP requests from the
+        :: %handle-http-request is where we handle HTTP GET requests from the
         :: frontend. The server library performs most of the heavy lifting here,
         :: and the rest is extracted into one of our helper functions.
         ::
         %handle-http-request
-      ::
-      :: HTTP requests don't affect our state.
-      ::
-      :_  this
+      :_  this  :: GET requests don't affect our state
       ::
       :: Assert the vase's type and extract its data, binding it to two faces,
       :: and pull 'app:server' into the subject for convenience.
@@ -359,8 +358,7 @@
   :: later; but this is usually unnecessary, as the path is a single hard-coded
   :: element (e.g. '%primary') and can simply be inlined wherever it's needed,
   :: or is constructed deterministically from information that can be found
-  :: elsewhere (such as the '%deck' path being constructed from the deck's ship
-  :: and name).
+  :: elsewhere (such as '/deck/[deck-name]').
   ::
   ++  on-watch
     |=  =path
@@ -377,8 +375,8 @@
     ::
     :: Similarly, this subscription is requested by the Launch app; it's
     :: telling us where to send tile-related updates. In fact, *we* told
-    :: Launch to subscribe to this path, back in our 'on-init' arm. Since we
-    :: don't have a fancy tile (yet) we don't need to do anything here.
+    :: Launch to subscribe to this path, back in our 'on-init' arm. Since this
+    :: app doesn't have a fancy tile (yet) we don't need to do anything here.
     ::
         [%rotetile ~]
       `this
@@ -391,8 +389,10 @@
         [%primary ~]
       `this
     ::
-    :: Another ship is subscribing to one of our decks! As with %rote-action,
-    :: we'll implement the logic for this in one of our helper arms.
+    :: Lastly, a more interesting path: another ship is subscribing to one
+    :: of our decks! Unlike the previous cases, we will react to this
+    :: subscription immediately, by sending the app the requested deck. As
+    :: with our pokes, we'll implement the logic for this in a helper arm.
     ::
         [%deck @ ~]
       =/  name  i.t.path
@@ -419,22 +419,40 @@
       ?+  wire  (on-agent:def wire sign)
           [%import @ @ ~]
         ?>  ?=(%rote-deck p.cage.sign)
-        =/  name  i.t.t.wire
+        =/  name  &3.wire  :: irregular syntax for 'i.t.t.wire'
         =/  deck  !<(deck:rote q.cage.sign)
         =^  cards  state  (handle-import-deck:rc name deck)
         [cards this]
       ==
     ==
   ::
-  :: on-arvo receives signs from Arvo. In our case, the only sign we receive
-  :: is from Eyre, acknowledging that it completed the %connect task we issued
-  :: in 'on-init'.
+  :: 'on-arvo' receives signs from Arvo. Whenever you pass a card to Arvo, you
+  :: specify a "wire," which will be included in the response that Arvo sends
+  :: back to you, much like an agent subscription path.
   ::
   ++  on-arvo
     |=  [=wire =sign-arvo]
     ^-  (quip card _this)
     ?+  wire  (on-arvo:def wire sign-arvo)
-      [%bind ~]  `this
+      ::
+      :: In a few places, we pass a card to Clay, asking it for a directory
+      :: listing; this is the response that Clay sends, containing a list of
+      :: the files. We pass the list to our 'reload-decks' helper function
+      :: to read each file and add it to our state.
+      ::
+        [%load %decks ~]
+      ?>  ?=([?(%b %c) %writ *] sign-arvo)
+      =/  =riot:clay  +>.sign-arvo
+      ?>  ?=(^ riot)
+      =/  paths  !<((list path) q.r.u.riot)
+      =^  cards  state  (reload-decks:rc paths)
+      [cards this]
+      ::
+      :: The Eyre sign is trivial, simply acknowledging that it completed the
+      :: '%connect' task we issued in 'on-init'.
+      ::
+        [%bind ~]
+      `this
     ==
   ::
   :: We don't need to do anything in these arms, so we use the default
@@ -450,14 +468,6 @@
 :: two, the helper door becomes the subject of the agent.
 ::
 |_  bowl=bowl:gall
-::
-:: The decks that Ford loaded for us are stored as udon, so we need to parse
-:: them into our 'deck' type, which we achieve by calling 'parse-deck' on each
-:: entry of the map.
-::
-++  local-decks
-  ^-  (map @ta deck:rote)
-  (~(rut by local-decks-udon) parse-deck)
 ::
 :: The handler for '%rote-action' pokes.
 ::
@@ -481,15 +491,15 @@
     [%pass wire %agent [who.action %rote] %watch /deck/[deck.action]]~
   ==
 ::
-:: The handler for subscription events. Pretty simple: we fetch the named deck
-:: from local-decks, and send it as a '%fact' to the subscriber. We immediately
+:: The handler for subscription events. Pretty simple: we fetch the named deck,
+:: and send it as a '%fact' to the subscriber. We immediately
 :: '%kick' the subscriber afterward, because we don't support true subscription
 :: yet -- just one-off request-response exchanges.
 ::
 ++  watch-deck
   |=  name=@ta
   ^-  (quip card _state)
-  =/  =deck:rote  (~(got by local-decks) name)
+  =/  =deck:rote  (~(got by local-decks.state) name)
   :_  state
   ::
   :: The delivery of cards is somewhat nuanced, so bear with me. Cards are
@@ -532,7 +542,8 @@
   :: immediately kick the subscribing ship from that same path.
   ::
   :: Lastly: %rote-deck is not an arbitrary symbol; it's a proper Clay mark.
-  :: When there's a hyphen in the name, it's interpreted as a directory, so
+  :: When there's a hyphen in the name, everything before the first hyphen is
+  :: interpreted as a directory, so
   :: Arvo will look for this mark in /mar/rote/deck.hoon.
   ::
   :~  [%give %fact ~ %rote-deck !>(deck)]
@@ -546,12 +557,108 @@
 ++  handle-import-deck
   |=  [name=@ta =deck:rote]
   ^-  (quip card _state)
-  =/  ds  (~(put by decks.state) [author.deck name] deck)
-  :_  state(decks ds)
-  ::
-  :: '[foo]~' is irregular syntax for '[foo ~]', i.e. a list of one element.
-  ::
+  =/  ds  (~(put by remote-decks.state) [author.deck name] deck)
+  :_  state(remote-decks ds)
   [[%give %fact [/primary]~ %rote-deck !>(deck)]]~
+::
+:: These arms are values, not functions; they're just cards that we pass to
+:: Clay, but we define them here because we use them in a few different places.
+::
+++  clay-sing
+  :: There's a lot going on here! '%sing' is short for "single" -- we're
+  :: querying the state at a particular instant, rather than an ongoing
+  :: subscription. '%t' means we want a directory listing (rather than, e.g.,
+  :: the contents of a file), and 'now.bowl' is the current time. We also
+  :: specify '/load/decks', the wire we saw in 'on-arvo'.
+  ^-  card
+  =/  =rave:clay  [%sing %t [%da now.bowl] /app/rote/decks]
+  [%pass /load/decks %arvo %c %warp our.bowl q.byk.bowl `rave]
+::
+++  clay-next
+  ::
+  :: This card is identical to 'clay-sing', except that we specify '%next'
+  :: instead of '%sing'. '%next' means "notify me the next time this thing
+  :: changes," so unlike '%sing', it won't produce a response immediately.
+  ::
+  :: TODO: can this be expressed in terms of 'clay-sing'?
+  ::
+  ^-  card
+  =/  =rave:clay  [%next %t [%da now.bowl] /app/rote/decks]
+  [%pass /load/decks %arvo %c %warp our.bowl q.byk.bowl `rave]
+::
+:: 'reload-decks' handles reading the deck udon files, parsing them, and adding
+:: them to our state.
+::
+++  reload-decks
+  |=  paths=(list path)
+  ^-  (quip card _state)
+  ::
+  :: '|^' composes an expression (the first argument) with a core (the second).
+  :: It's useful when you need to define one or more helper functions for
+  :: computing a particular value.
+  ::
+  |^
+  :-  [clay-next]~
+  ::
+  :: 'turn' calls 'read-deck' on each element of 'paths', producing a new list.
+  :: 'molt' takes a list of pairs and turns them into a map. We want a map from
+  :: deck names to decks, so 'read-deck' takes a single path and turns it into
+  :: a pair of name and deck.
+  ::
+  state(local-decks (molt (turn paths read-deck)))
+  ++  read-deck
+  |=  =path
+  ^-  [@ta deck:rote]
+  ?>  ?=([%app %rote %decks @ %udon ~] path)
+  =/  name=@tas  &4:path
+  ::
+  :: A "beak" is a filesystem path prefix; it's a combination of your ship name,
+  :: desk name, and a revision identifier (which is like a more flexible variant
+  :: of a git commit hash). We concatenate our beak with 'path' to construct the
+  :: full path, then use the '.^' rune to scry it. '@t' specifies the aura we
+  :: want to apply to the result, and '%cx' means we're scrying file data ('x')
+  :: from Clay ('c').
+  ::
+  =/  our-beak  /(scot %p our.bowl)/[q.byk.bowl]/(scot %da now.bowl)
+  =/  =deck:rote  (parse-deck name .^(@t %cx (welp our-beak path)))
+  [name deck]
+  ::
+  :: 'parse-deck' is our udon deck file parser. It's is fairly dense and not
+  :: terribly relevant to other apps, so feel free to skip it.
+  ::
+  ++  parse-deck
+    |=  [path=@tas udon=@t]
+    ^-  deck:rote
+    =/  front-idx  (add 3 (need (find ";>" (trip udon))))
+    =/  front-matter  (cat 3 (end 3 front-idx udon) 'dummy text\0a')
+    =/  body  (cut 3 [front-idx (met 3 udon)] udon)
+    ::
+    :: Interpret the header as Hoon code, producing either a map of
+    :: symbol->string, or an error.
+    ::
+    =/  meta=(each (map term knot) tang)
+      %-  mule  |.
+      %-  ~(run by inf:(static:cram (ream front-matter)))
+      |=  a=dime  ^-  cord
+      ?+  (end 3 1 p.a)  (scot a)
+        %t  q.a
+      ==
+    ::
+    :: For various fields, extract the field from the header if it exists, using a
+    :: default value otherwise.
+    ::
+    =/  author=@p  our.bowl
+    =?  author  ?=(%.y -.meta)
+      (fall (biff (~(get by p.meta) %author) (slat %p)) our.bowl)
+    =/  title=@t  path
+    =?  title  ?=(%.y -.meta)
+      (fall (~(get by p.meta) %title) path)
+    :*  author
+        title
+        path
+        body
+    ==
+  --
 ::
 :: The handler for HTTP requests. There are two major cases we need to handle:
 :: static resources (HTML/JS/CSS/images) and deck data.
@@ -598,7 +705,7 @@
     :: The gate turns a deck into a JSON object using the 'pairs' arm from
     :: 'enjs:format'.
     ::
-    %+  turn  (weld ~(val by local-decks) ~(val by decks.state))
+    %+  turn  (weld ~(val by local-decks.state) ~(val by remote-decks.state))
     |=  =deck:rote
     %-  pairs
     ::
@@ -619,47 +726,7 @@
   ::
       [%'~rote' *]  (html-response:gen index)
   ==
-::
-:: And finally, our udon deck file parser. This function is fairly dense and not
-:: terribly relevant to other apps, so feel free to skip it.
-::
-++  parse-deck
-  |=  [path=@tas udon=@t]
-  ^-  deck:rote
-  =/  front-idx  (add 3 (need (find ";>" (trip udon))))
-  =/  front-matter
-    (cat 3 (end 3 front-idx udon) 'dummy text\0a')
-  =/  body  (cut 3 [front-idx (met 3 udon)] udon)
-  ::
-  :: Interpret the header as Hoon code, producing either a map of
-  :: symbol->string, or an error.
-  ::
-  =/  meta=(each (map term knot) tang)
-    %-  mule  |.
-    %-  ~(run by inf:(static:cram (ream front-matter)))
-    |=  a=dime  ^-  cord
-    ?+  (end 3 1 p.a)  (scot a)
-      %t  q.a
-    ==
-  ::
-  :: For various fields, extract the field from the header if it exists, using a
-  :: default value otherwise.
-  ::
-  =/  author=@p  our.bowl
-  =?  author  ?=(%.y -.meta)
-    %+  fall
-      (biff (~(get by p.meta) %author) (slat %p))
-    our.bowl
-  ::
-  =/  title=@t  path
-  =?  title  ?=(%.y -.meta)
-    (fall (~(get by p.meta) %title) path)
-  ::
-  :*  author
-      title
-      path
-      body
-  ==
+--
 ::
 :: You're done! Hopefully you have a better picture of how to create your own
 :: Gall app now. If there are things you're still confused by, or parts that
@@ -668,4 +735,3 @@
 ::
 ::    https://github.com/lukechampine/rote
 ::
---
