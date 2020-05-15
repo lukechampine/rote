@@ -6,17 +6,17 @@
 :: Hooners, i.e. people who have a decent grasp of Hoon and Arvo at a high
 :: level, but haven't memorized all the runes and are missing a lot of context.
 :: As a supplement, I recommend reading the official Gall tutorials as well;
-:: they'll fill some parts that aren't covered here, and when you're learning,
+:: they'll fill some gaps that aren't covered here, and when you're learning,
 :: it never hurts to have the core concepts explained to you multiple times in
 :: different ways.
 ::
 :: For context, I'll provide a high-level overview of how the app works. It's
 :: basically a pared-down version of publish, with flashcard decks instead of
-:: notebooks. These decks consistute the app's :: state. Each deck is stored
-:: as an udon (i.e. Markdown) file in your desk (filesystem). When requested,
-:: the backend provides these decks to the frontend (for rendering), and also
-:: to other ships (for sharing). Other than that, the only thing the backend
-:: needs to do is serve static HTML/JS/CSS resources; it's nothing fancy!
+:: notebooks. These decks consistute the app's state. Each deck is stored as an
+:: udon (i.e. Markdown) file in your desk (filesystem). When requested, the
+:: backend provides these decks to the frontend (for rendering), and also to
+:: other ships (for sharing). Other than that, the only thing the backend needs
+:: to do is serve static HTML/JS/CSS resources; it's nothing fancy!
 ::
 ::
 :: We begin by importing some files via Ford. (Ford runes can be identified by
@@ -419,7 +419,7 @@
       ?+  wire  (on-agent:def wire sign)
           [%import @ @ ~]
         ?>  ?=(%rote-deck p.cage.sign)
-        =/  name  &3.wire  :: irregular syntax for 'i.t.t.wire'
+        =/  name  &3.wire
         =/  deck  !<(deck:rote q.cage.sign)
         =^  cards  state  (handle-import-deck:rc name deck)
         [cards this]
@@ -436,16 +436,27 @@
     ?+  wire  (on-arvo:def wire sign-arvo)
       ::
       :: In a few places, we pass a card to Clay, asking it for a directory
-      :: listing; this is the response that Clay sends, containing a list of
-      :: the files. We pass the list to our 'reload-decks' helper function
-      :: to read each file and add it to our state.
+      :: listing; here, we handle the response that Clay sends. We pass the
+      :: list to our 'reload-decks' helper function to read each file and add
+      :: it to our state.
       ::
-        [%load %decks ~]
+        [%reload ~]
       ?>  ?=([?(%b %c) %writ *] sign-arvo)
       =/  =riot:clay  +>.sign-arvo
       ?>  ?=(^ riot)
       =/  paths  !<((list path) q.r.u.riot)
       =^  cards  state  (reload-decks:rc paths)
+      [cards this]
+      ::
+      :: We also need to handle the case where an existing deck file is updated.
+      :: Here, the response we receive is the data of a single file, rather than
+      :: a directory listing.
+      ::
+        [%update ~]
+      ?>  ?=([?(%b %c) %writ *] sign-arvo)
+      =/  =riot:clay  +>.sign-arvo
+      ?~  riot  `this  :: file was deleted
+      =^  cards  state  (update-deck:rc u.riot)
       [cards this]
       ::
       :: The Eyre sign is trivial, simply acknowledging that it completed the
@@ -561,30 +572,41 @@
   :_  state(remote-decks ds)
   [[%give %fact [/primary]~ %rote-deck !>(deck)]]~
 ::
-:: These arms are values, not functions; they're just cards that we pass to
-:: Clay, but we define them here because we use them in a few different places.
+:: These arms are values, not gates; they're just cards that we pass to Clay,
+:: but we define them here because we use them in a few different places.
 ::
 ++  clay-sing
+  ^-  card
+  ::
   :: There's a lot going on here! '%sing' is short for "single" -- we're
   :: querying the state at a particular instant, rather than an ongoing
   :: subscription. '%t' means we want a directory listing (rather than, e.g.,
   :: the contents of a file), and 'now.bowl' is the current time. We also
-  :: specify '/load/decks', the wire we saw in 'on-arvo'.
-  ^-  card
+  :: specify '/reload', the wire we saw in 'on-arvo'.
+  ::
   =/  =rave:clay  [%sing %t [%da now.bowl] /app/rote/decks]
-  [%pass /load/decks %arvo %c %warp our.bowl q.byk.bowl `rave]
+  [%pass /reload %arvo %c %warp our.bowl q.byk.bowl `rave]
 ::
 ++  clay-next
+  ^-  card
   ::
   :: This card is identical to 'clay-sing', except that we specify '%next'
   :: instead of '%sing'. '%next' means "notify me the next time this thing
   :: changes," so unlike '%sing', it won't produce a response immediately.
   ::
-  :: TODO: can this be expressed in terms of 'clay-sing'?
-  ::
-  ^-  card
   =/  =rave:clay  [%next %t [%da now.bowl] /app/rote/decks]
-  [%pass /load/decks %arvo %c %warp our.bowl q.byk.bowl `rave]
+  [%pass /reload %arvo %c %warp our.bowl q.byk.bowl `rave]
+::
+:: Okay, this one is a gate; it's paramaterized on a path. Unlike the cards
+:: above, this one requests the contents of a single file, rather than a
+:: directory listing. We return a card like this for every deck file, so that
+:: we'll be notified if any of them change.
+::
+++  clay-update
+  |=  =path
+  ^-  card
+  =/  =rave:clay  [%next %x [%da now.bowl] path]
+  [%pass /update %arvo %c %warp our.bowl q.byk.bowl `rave]
 ::
 :: 'reload-decks' handles reading the deck udon files, parsing them, and adding
 :: them to our state.
@@ -598,7 +620,8 @@
   :: computing a particular value.
   ::
   |^
-  :-  [clay-next]~
+  =/  next-cards  (turn paths clay-update)
+  :-  (snoc next-cards clay-next)
   ::
   :: 'turn' calls 'read-deck' on each element of 'paths', producing a new list.
   :: 'molt' takes a list of pairs and turns them into a map. We want a map from
@@ -607,61 +630,40 @@
   ::
   state(local-decks (molt (turn paths read-deck)))
   ++  read-deck
-  |=  =path
-  ^-  [@ta deck:rote]
-  ?>  ?=([%app %rote %decks @ %udon ~] path)
-  =/  name=@tas  &4:path
-  ::
-  :: A "beak" is a filesystem path prefix; it's a combination of your ship name,
-  :: desk name, and a revision identifier (which is like a more flexible variant
-  :: of a git commit hash). We concatenate our beak with 'path' to construct the
-  :: full path, then use the '.^' rune to scry it. '@t' specifies the aura we
-  :: want to apply to the result, and '%cx' means we're scrying file data ('x')
-  :: from Clay ('c').
-  ::
-  =/  our-beak  /(scot %p our.bowl)/[q.byk.bowl]/(scot %da now.bowl)
-  =/  =deck:rote  (parse-deck name .^(@t %cx (welp our-beak path)))
-  [name deck]
-  ::
-  :: 'parse-deck' is our udon deck file parser. It's is fairly dense and not
-  :: terribly relevant to other apps, so feel free to skip it.
-  ::
-  ++  parse-deck
-    |=  [path=@tas udon=@t]
-    ^-  deck:rote
-    =/  front-idx  (add 3 (need (find ";>" (trip udon))))
-    =/  front-matter  (cat 3 (end 3 front-idx udon) 'dummy text\0a')
-    =/  body  (cut 3 [front-idx (met 3 udon)] udon)
+    |=  =path
+    ^-  [@ta deck:rote]
+    ?>  ?=([%app %rote %decks @ %udon ~] path)
+    =/  name=@tas  &4:path
     ::
-    :: Interpret the header as Hoon code, producing either a map of
-    :: symbol->string, or an error.
+    :: A "beak" is a filesystem path prefix; it's a combination of your ship name,
+    :: desk name, and a revision identifier (which is like a more flexible variant
+    :: of a git commit hash). We concatenate our beak with 'path' to construct the
+    :: full path, then use the '.^' rune to scry it. '@t' specifies the aura we
+    :: want to apply to the result, and '%cx' means we're scrying file data ('x')
+    :: from Clay ('c').
     ::
-    =/  meta=(each (map term knot) tang)
-      %-  mule  |.
-      %-  ~(run by inf:(static:cram (ream front-matter)))
-      |=  a=dime  ^-  cord
-      ?+  (end 3 1 p.a)  (scot a)
-        %t  q.a
-      ==
-    ::
-    :: For various fields, extract the field from the header if it exists, using a
-    :: default value otherwise.
-    ::
-    =/  author=@p  our.bowl
-    =?  author  ?=(%.y -.meta)
-      (fall (biff (~(get by p.meta) %author) (slat %p)) our.bowl)
-    =/  title=@t  path
-    =?  title  ?=(%.y -.meta)
-      (fall (~(get by p.meta) %title) path)
-    :*  author
-        title
-        path
-        body
-    ==
+    =/  our-beak  /(scot %p our.bowl)/[q.byk.bowl]/(scot %da now.bowl)
+    =/  =deck:rote  (parse-deck name .^(@t %cx (welp our-beak path)))
+    [name deck]
   --
 ::
-:: The handler for HTTP requests. There are two major cases we need to handle:
-:: static resources (HTML/JS/CSS/images) and deck data.
+:: 'update-deck' parses a deck from a 'rant' (a Clay structure containing the
+:: data at a particular node in the filesystem), and stores it in the state.
+:: It also produces a 'clay-update' card, subscribing to the next change made
+:: to that particular file.
+::
+++  update-deck
+  |=  =rant:clay
+  ^-  (quip card _state)
+  =/  =path  q.rant
+  =/  name  &4.path
+  =/  udon  !<(@t q.r.rant)
+  =/  ds  (~(put by local-decks.state) name (parse-deck name udon))
+  :_  state(local-decks ds)
+  [(clay-update path)]~
+::
+:: The handler for HTTP GET requests. There are two major cases we need to
+:: handle: static resources (HTML/JS/CSS/images) and deck data.
 ::
 ++  poke-handle-http-request
   |=  =inbound-request:eyre
@@ -725,6 +727,42 @@
   :: the others.
   ::
       [%'~rote' *]  (html-response:gen index)
+  ==
+::
+:: 'parse-deck' is our udon deck file parser. It's fairly dense and not
+:: terribly relevant to other apps, so feel free to skip it.
+::
+++  parse-deck
+  |=  [path=@tas udon=@t]
+  ^-  deck:rote
+  =/  front-idx  (add 3 (need (find ";>" (trip udon))))
+  =/  front-matter  (cat 3 (end 3 front-idx udon) 'dummy text\0a')
+  =/  body  (cut 3 [front-idx (met 3 udon)] udon)
+  ::
+  :: Interpret the header as Hoon code, producing either a map of
+  :: symbol->string, or an error.
+  ::
+  =/  meta=(each (map term knot) tang)
+    %-  mule  |.
+    %-  ~(run by inf:(static:cram (ream front-matter)))
+    |=  a=dime  ^-  cord
+    ?+  (end 3 1 p.a)  (scot a)
+      %t  q.a
+    ==
+  ::
+  :: For various fields, extract the field from the header if it exists, using a
+  :: default value otherwise.
+  ::
+  =/  author=@p  our.bowl
+  =?  author  ?=(%.y -.meta)
+    (fall (biff (~(get by p.meta) %author) (slat %p)) our.bowl)
+  =/  title=@t  path
+  =?  title  ?=(%.y -.meta)
+    (fall (~(get by p.meta) %title) path)
+  :*  author
+      title
+      path
+      body
   ==
 --
 ::
