@@ -38,6 +38,8 @@ For Hoon practice, try importing these decks!
 ~watter-parter/hoon-irregular-forms
 ```
 
+(Alternatively, you can copy the `decks` directory into your pier.)
+
 ## Walkthrough
 
 This repository also functions as a walkthrough for creating your own Gall

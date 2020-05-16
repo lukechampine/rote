@@ -1,0 +1,381 @@
+:-  :~
+  [%author '~watter-parter']
+  [%title 'Common Hoon Runes']
+  [%last-modified '~2020.4.11..21.15.45..5cc0']
+  [%date-created '~2020.4.11..21.15.45..5cc0']
+    ==
+;>
+
+# `++(p q)`
+
+---
+
+luslus: produce a normal arm
+
+===
+
+# `|=(p q)`
+
+---
+
+bartis: produce a gate
+
+===
+
+# `=/(p q)`
+
+---
+
+tisfas: add a typed noun to the subject
+
+===
+
+# `^-(p q)`
+
+---
+
+kethep: typecast by explicit type label
+
+===
+
+# `%+(p q r)`
+
+---
+
+cenlus: call a gate with a cell sample
+
+===
+
+# `!>(p)`
+
+---
+
+zapgar: wrap a noun in its type, producing a vase
+
+===
+
+# `?:(p q r)`
+
+---
+
+wutcol: branch on a boolean test
+
+===
+
+# `?=(p q)`
+
+---
+
+wuttis: test whether q is in the type of p
+
+===
+
+# `?~(p q r)`
+
+---
+
+wutsig: branch on whether p is null
+
+===
+
+# `:-(p q)`
+
+---
+
+colhep: construct a cell
+
+===
+
+# `=+(p q)`
+
+---
+
+tislus: add a noun to the subject
+
+===
+
+# `%-(p q)`
+
+---
+
+cenhep: call a gate
+
+===
+
+# `:*(p...)`
+
+---
+
+coltar: construct an n-tuple
+
+===
+
+# `=.(p q)`
+
+---
+
+tisdot: change one leg in the subject
+
+===
+
+# `=^(p q r s)`
+
+---
+
+tisket: for a pair produced by r, pin the head to p, set q to the tail
+
+===
+
+# `?.(p q r)`
+
+---
+
+wutdot: branch on a boolean test, inverted
+
+===
+
+# `?>(p q)`
+
+---
+
+wutgar: positive assertion
+
+===
+
+# `:~(p...)`
+
+---
+
+colsig: construct a null-terminated list
+
+===
+
+# `|%(p q)`
+
+---
+
+barcen: produce a core
+
+===
+
+# `$:(p...)`
+
+---
+
+buccol: form a cell type
+
+===
+
+# `+$(p q)`
+
+---
+
+lusbuc: produce a type definition
+
+===
+
+# `|-(p)`
+
+---
+
+barhep: produce a trap and evaluate it
+
+===
+
+# `^+(p q)`
+
+---
+
+ketlus: typecast by inferred type
+
+===
+
+# `%.(p q)`
+
+---
+
+cendot: call a gate, inverted
+
+===
+
+# `=*(p q r)`
+
+---
+
+tistar: define an alias
+
+===
+
+# `:_(p q)`
+
+---
+
+colcab: construct a cell, inverted
+
+===
+
+# `?-(p q...)`
+
+---
+
+wuthep: type switch, no default
+
+===
+
+# `:+(p q r)`
+
+---
+
+collus: construct a 3-tuple
+
+===
+
+# `~|(p q)`
+
+---
+
+sigbar: tracing printf
+
+===
+
+# `!!`
+
+---
+
+zapzap: crash unconditionally
+
+===
+
+# `=,(p q)`
+
+---
+
+tiscom: expose namespace
+
+===
+
+# `=?(p q r s)`
+
+---
+
+tiswut: conditionally change one leg in the subject
+
+===
+
+# `~/(p q)`
+
+---
+
+sigfas: jet registration for gate with registered context
+
+===
+
+# `;:(p q...)`
+
+---
+
+miccol: call a binary function as an n-ary function
+
+===
+
+# `|*(p q)`
+
+---
+
+bartar: produce a wet gate
+
+===
+
+# `~&(p q)`
+
+---
+
+sigpam: debugging printf
+
+===
+
+# `=>(p q)`
+
+---
+
+tisgar: compose two expressions
+
+===
+
+# `$%(p...)`
+
+---
+
+buccen: structure which recognizes a union tagged by head atom
+
+===
+
+# `.^(p q)`
+
+---
+
+dotket: query a vane
+
+===
+
+# `=|(p q)`
+
+---
+
+tisbar: add a bunt value to the subject
+
+===
+
+# `?+(p q r...)`
+
+---
+
+wutlus: type switch, with default
+
+===
+
+# `=<(p q)`
+
+---
+
+tisgal: compose two expressions, inverted
+
+===
+
+# `|_(p q r)`
+
+---
+
+barcab: produce a door
+
+===
+
+# `=-(p q)`
+
+---
+
+tishep: add a noun to the subject, inverted
+
+===
+
+# `!<(p q)`
+
+---
+
+zapgal: unwrap a vase, asserting that its type matches a particular mold
+
+===
+
+# `?^(p q r)`
+
+---
+
+wutket: branch on whether p is a cell
+
+===
+
+# `|^(p q)`
+
+---
+
+barket: produce a core and evaluate its $ arm
