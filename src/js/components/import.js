@@ -38,7 +38,6 @@ export function ImportDeck() {
           onClick={importDeck}
           className='db f9 green2 ba pa2 b--green2 bg-gray0-d pointer'>Import</button>
         <br />
-        <p className='gray3'>You may need to refresh after importing, sorry! Working on it...</p>
       </div>
     </div>
   )

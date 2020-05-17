@@ -6,14 +6,14 @@
 :: Hooners, i.e. people who have a decent grasp of Hoon and Arvo at a high
 :: level, but haven't memorized all the runes and are missing a lot of context.
 :: As a supplement, I recommend reading the official Gall tutorials as well;
-:: they'll fill some gaps that aren't covered here, and when you're learning,
-:: it never hurts to have the core concepts explained to you multiple times in
-:: different ways.
+:: they'll fill in some gaps that aren't covered here. When you're learning, it
+:: never hurts to have core concepts explained to you multiple times in multiple
+:: ways.
 ::
 :: For context, I'll provide a high-level overview of how the app works. It's
 :: basically a pared-down version of publish, with flashcard decks instead of
-:: notebooks. These decks consistute the app's state. Each deck is stored as an
-:: udon (i.e. Markdown) file in your desk (filesystem). When requested, the
+:: notebooks. These decks consistute the agent's state. Each deck is stored as
+:: an udon (i.e. Markdown) file in your desk (filesystem). When requested, the
 :: backend provides these decks to the frontend (for rendering), and also to
 :: other ships (for sharing). Other than that, the only thing the backend needs
 :: to do is serve static HTML/JS/CSS resources; it's nothing fancy!
@@ -38,20 +38,19 @@
 ::
 /-  rote
 ::
-:: Next, we import some "library files." /+ is pretty much identical to /-,
+:: Next, we import some library files. '/+' is pretty much identical to '/-',
 :: except that it looks in the /lib directory. Again, we use explicit
-:: namespacing here, but Gall apps often import *server for convenience.
+:: namespacing here, but Gall agents often import '*server' for convenience.
 ::
-:: server provides various HTTP server utilities, such as handling
-:: authentication and converting JSON values to raw octets. cram is used for
-:: parsing udon metadata; don't worry about it. default-agent provides defaults
-:: (or 'stubs') for the 10 Gall agent arms.
+:: 'server' provides various HTTP server utilities, such as handling
+:: authentication and converting JSON values to raw octets. 'cram' is used for
+:: parsing udon metadata; don't worry about it. 'default-agent' provides
+:: defaults (aka stubs) for the 10 Gall agent arms.
 ::
 :: The '/-' and '/+' runes also support custom faces; we could write e.g.
 :: '/+  srv=server' if we wanted to refer to 'server' as 'srv'. This is often
-:: done when your app has both a type definition file and a library file. If
-:: that were the case here, we would import those as '/-  rote-sur=rote' and
-:: '/+  rote-lib=rote', respectively.
+:: done when your agent has both a type definition file and a library file, to
+:: prevent a naming collision.
 ::
 /+  server, cram, default-agent
 ::
@@ -64,7 +63,7 @@
   /:  /===/app/rote/index  :: the path to the file
     /html/                 :: the mark (extension) of the file
 ::
-:: Same as above, just more compact
+:: Same as above, just more compact:
 ::
 /=  tile-js  /;  as-octs:mimes:html  /:  /===/app/rote/js/tile  /js/
 /=  script   /;  as-octs:mimes:html  /:  /===/app/rote/js/index  /js/
@@ -77,6 +76,10 @@
 /=  rote-png
   /^  (map knot @)
   /:  /===/app/rote/img  /_  /png/
+::
+:: The '===' in these paths is shorthand for your "beak." A beak is a filesystem
+:: path prefix, comprising your ship name, desk name, and a revision identifier.
+:: Later on, we'll construct a beak manually.
 ::
 :: Okay, done with importing. Our next step is to define a few local types.
 :: These don't need to go in /sur, because they're only used in this file.
@@ -91,17 +94,20 @@
 ::
 :: More importantly, we need to define our agent's state. By convention, the
 :: state is a tagged union, comprising the different state types in each
-:: version of the app. For example, maybe in the v0 release of your app, its
-:: state was a single '@ud'. Then in v1, you added a '@tas', so your state is
-:: now a '[@ud @tas]'. Instead of redefining your state type, you would add the
-:: new type to the versioned-state union. This allows you to easily upgrade from
-:: one version to the next, which we'll see in the on-load arm.
+:: version of the agent. For example, maybe in the v0 release of your app, your
+:: agent's state was a single '@ud'. Then in v1, you added a '@tas', so your
+:: state is now a '[@ud @tas]'. Instead of redefining your state type, you would
+:: add the new type to the 'versioned-state' union. This allows you to easily
+:: upgrade from one version to the next, which we'll see in the 'on-load' arm.
 ::
 :: (You don't need to start defining separate types like this until your app is
 :: out in the wild. If you're just rapidly iterating on an MVP, it's fine to
 :: redefine 'state-zero'.)
 ::
-:: Our app's state is a set of decks, keyed by their owner and name.
+:: Our agent's state consists of two maps: one for local decks (which are also
+:: stored in Clay as raw .udon files), and one for remote decks (which we
+:: requested from other ships). The latter is keyed by both the ship name and
+:: deck name, and the former by just the deck name.
 ::
 +$  state-zero
   $:  local-decks=(map @ta deck:rote)
@@ -113,15 +119,29 @@
   ==
 --
 ::
+:: Before we move on, I want to clear up one thing that confused me. We just
+:: defined a core: the '--' terminated the expression. But now we're going to
+:: add another expression below, which will reference the core we defined above.
+:: Normally, we would have to explicitly compose these two expressions with the
+:: '=>' rune. But as it turns out, .hoon files built by Ford are parsed as a
+:: *list* of expressions, which are implicitly composed. Here, I'll prove it:
+::
+.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
+::
+:: Composing '.' with anything is a no-op, so we can do it as many times as we
+:: want without changing the final result. But if you try to enter something
+:: like this in Dojo, you'll get a syntax error, because Dojo only accepts a
+:: single expression at a time.
+::
+:: Anyway...
+::
 :: Now that we have a state type, we need a state value -- the thing we'll
-:: actually mutate. It doesn't really matter what value we use for 'state' here,
-:: since it will be initialized later, so we use the bunt value.
+:: actually "mutate." It doesn't really matter what value we use for 'state'
+:: here, since it will be initialized later, so we use the bunt value.
 ::
-:: Some Gall apps will add a state value to the subject without a face (so that
-:: they can refer to e.g. 'decks' instead of 'decks.state'), but as usual, my
+:: Some Gall apps will add a state value to the subject without a face, so that
+:: they can refer to e.g. 'decks' instead of 'decks.state'. But as usual, my
 :: preference is to be explicit.
-::
-:: TODO: I haven't been able to get this to work with multiple versioned states.
 ::
 =|  state=versioned-state
 ::
@@ -149,13 +169,13 @@
   ::
   +*  this  .                                  :: our agent
       rc    ~(. +> bowl)                       :: +> resolves to our helper door, which we turn into a core by passing it our bowl
-      def   ~(. (default-agent this %|) bowl)  :: our default/'stub' arms, constructed by passing our door and bowl to the default-agent library
+      def   ~(. (default-agent this %|) bowl)  :: our default/"stub" arms, constructed by passing our door and bowl to the default-agent library
   ::
-  :: on-init is called when the app is started for the first time. It is
+  :: on-init is called when the agent is started for the first time. It is
   :: responsible for setting the initial state and emitting any initialization
-  :: effects. It is *not* called every time the app is restarted (e.g. with
+  :: effects. It is *not* called every time the agent is restarted (e.g. with
   :: ':goad %force'); as far as I can tell, it is only ever called once, when
-  :: you run '|start %app'.
+  :: you run '|start %foo'.
   ::
   ++  on-init
     ::
@@ -169,47 +189,47 @@
     :: that 'state' is already initialized to the the bunt value of its type
     :: (i.e. two empty maps) which is what we want. We do, however, need to emit
     :: effects: we need to tell Eyre (%e) to route HTTP requests to /~rote to
-    :: our app, and we need to tell the launch agent where to find our tile, so
-    :: it can include it in the Landscape home screen.
+    :: our agent, we need to ask Clay (%c) for the list of deck files, and we need
+    :: to tell the launch agent where to find our tile.
     ::
-    :_  this
+    :_  this  :: ':_' constructs a cell, inverted
     :~
       ::
       :: Cards passed to Arvo have a different structure than cards passed to
       :: other agents. The Arvo structure is:
       ::
-      ::    [%pass /my/wire %arvo %vane task]
+      ::    [%pass /my/wire %arvo <vane> task]
       ::
-      :: where %vane is one of %a,%b,%c..., standing for Ames, Behn, Clay, etc.
+      :: where <vane> is one of %a,%b,%c..., standing for Ames, Behn, Clay, etc.
       :: A 'task' generally consists of a "mark" (symbol) indicating the
       :: desired action, followed by any associated data, which varies based
       :: on the task.
       ::
       :: In this case, '%connect' expects a domain and URL, followed by the name
-      :: of the app to connect.
+      :: of the agent to connect.
       ::
       [%pass /bind %arvo %e %connect [~ /'~rote'] %rote]
       ::
-      :: We also need to query Clay, asking it for the contents of the directory
-      :: where we store our own decks. Since we reuse this card in a few places
+      :: This card queries Clay, asking it for the contents of the directory
+      :: where we store our own decks. Since we reuse this card in a few places,
       :: it's defined in our helper core.
       ::
       clay-sing:rc
       ::
       :: The structure for an agent card is necessarily more generic than an
       :: Arvo card. Since it has to work with arbitrary agents, it uses a
-      :: dynamic "cage" value rather than a tagged union of all legal values.
-      :: The structure is:
+      :: dynamic "cage" rather than a tagged union of all legal values. The
+      :: structure is:
       ::
-      ::    [%pass /my/wire %agent [~ship %app-name] task]
+      ::    [%pass /my/wire %agent [<ship> <agent-name>] task]
       ::
       :: where 'task' is a tagged union of %poke, %watch, and %leave. %poke is
       :: the most common and flexible way of interacting with agents, whereas
       :: %watch and %leave deal specifically with subscription.
       ::
-      :: In this case, we're poking the %launch app. The %launch app defines yet
-      :: another tagged union, this one of possible actions we can request. We
-      :: construct an action that tells %launch to add our tile to Landscape;
+      :: In this case, we're poking the %launch agent. The %launch agent defines
+      :: yet another tagged union, this one of possible actions we can request.
+      :: We construct an action that tells %launch to add our tile to Landscape;
       :: then we wrap the action in its type to produce a vase; then we pair the
       :: vase with the %launch-action mark to form a cage.
       ::
@@ -218,30 +238,36 @@
       [%pass /tile %agent [our.bowl %launch] %poke cage]
     ==
   ::
-  :: These arms are called when the app is upgraded. This will occur any time
-  :: you modify your app and commit the desk: first, 'on-save' will be called to
-  :: store the previous state; then the app will be reloaded; then the previous
-  :: state will be passed to the new on-load arm.
+  :: These arms are called when the agent is upgraded. This will occur any time
+  :: you modify your agent and commit the desk: first, 'on-save' will be called
+  :: to store the previous state; then the agent will be reloaded; then the
+  :: previous state will be passed to the new 'on-load' arm.
   ::
   :: 'on-save' rarely needs to be more sophisticated than '!>(state)', i.e. the
-  :: current state wrapped in its type.
+  :: current state wrapped in its type. Note that 'on-save' doesn't take any
+  :: arguments or emit any effects.
   ::
   :: 'on-load' should type-switch on the value it's given, so that you can
   :: upgrade appropriately based on what version you're upgrading from.
   ::
-  ++  on-save  !>(state)
+  ++  on-save
+    ^-  vase
+    !>(state)
+  ::
   ++  on-load
     |=  =vase
     ^-  (quip card _this)
     ::
     :: Regardless of what we load, we also need to emit the same Clay card as
-    :: in 'on-init', because if the app is upgraded, we'll want to fetch the
-    :: current directory contents again. We use an irregular form here to
-    :: create a list: '[foo]~' means '[foo ~]'.
+    :: in 'on-init', because if the agent is upgraded, we'll want to fetch the
+    :: current directory contents again.
+    ::
+    :: We use ':-' here rather than ':_' so that the shorter branch comes first,
+    :: and we use the irregular syntax '[foo]~', which means '[foo ~]'.
     :: 
     :-  [clay-sing:rc]~
     ::
-    :: This app only has one state version, so the "upgrade" logic is trivial:
+    :: This agent only has one state version, so the "upgrade" logic is trivial:
     :: just set 'state' equal to the contents of the provided vase.
     ::
     =/  prev  !<(versioned-state vase)
@@ -250,7 +276,7 @@
       this(state prev)
     ==
   ::
-  :: 'on-poke' is one of the main "event handlers" for your app. It's where
+  :: 'on-poke' is one of the main "event handlers" for your agent. It's where
   :: you'll receive input from the user (via either Dojo or Landscape) and from
   :: other ships.
   ::
@@ -275,7 +301,7 @@
         ::    > :rote &foo 1
         ::
         :: This will be sent as '[%foo 1]'. Note, however, that this requires
-        :: a 'foo' Clay mark to exist in the /mar directory.
+        :: a 'foo' mark to exist in the /mar directory.
         ::
         %noun
       ::
@@ -291,7 +317,7 @@
       :: So, these pokes aren't very useful in production, but I left them in
       :: because they're useful to have when developing/debugging. When I need
       :: to debug something, I often do so by adding a new case here and poking
-      :: my app manually from Dojo.
+      :: my agent manually from Dojo.
       ::
       ?+    q.vase  (on-poke:def mark vase)
           %print-state
@@ -299,7 +325,7 @@
         `this  :: irregular syntax for '[~ this]'
       ::
           %reset-state
-        `this(state *versioned-state)
+        `this(state *_state)  :: irregular syntax for "the bunt value of '_state'"
       ==
         ::
         :: %rote-action is where we handle pokes from other agents. Somewhat
@@ -308,19 +334,18 @@
         :: the '%handle-http-request' arm below; but when it needs to initiate
         :: some kind of action, it uses PUT requests to send arbitrary pokes.
         ::
-        :: Like the %launch app, we've defined a set of possible actions, so
+        :: Like the %launch agent, we've defined a set of possible actions, so
         :: we'll do a type-switch to dispatch on those. But since this tends to
         :: involve a lot of logic, we call out to one of our helper arms to avoid
         :: cluttering the agent definition.
         ::
-        :: Here, we use the '=^' rune, which is a little complicated, but also
-        :: frequently used in Gall apps. Much like how an agent's arms produce a
-        :: new agent and a list of effects, '=^' pins a new face to the subject
-        :: and rebinds an existing face. The values of these faces come from the
-        :: third argument. So in this expression, we're calling
-        :: 'poke-rote-action' on the action, which produces a list of cards and
-        :: a new state; 'state' is then rebound to the new state, and the cards
-        :: are returned from 'on-poke' along with 'this'.
+        :: Here, we use the '=^' rune, which is a little complicated. Much like
+        :: how an agent's arms produce a new agent and a list of effects, '=^'
+        :: pins a new face to the subject and rebinds an existing face. The
+        :: values of these faces come from the third argument. So here, we're
+        :: calling 'poke-rote-action' on the action, which produces a list of
+        :: cards and a new state; 'state' is then rebound to the new state, and
+        :: the cards are returned from 'on-poke' along with 'this'.
         ::
         %rote-action
       =^  cards  state  (poke-rote-action:rc !<(action:rote vase))
@@ -333,11 +358,9 @@
         %handle-http-request
       :_  this  :: GET requests don't affect our state
       ::
-      :: Assert the vase's type and extract its data, binding it to two faces,
-      :: and pull 'app:server' into the subject for convenience.
+      :: Assert the vase's type and extract its data, binding it to two faces.
       ::
       =+  !<([eyre-id=@ta =inbound-request:eyre] vase)
-      =+  app=app:server
       ::
       :: 'require-authorization' is a higher-order function that first
       :: authenticates the request, then calls our gate on it; and
@@ -346,12 +369,12 @@
       :: cards to Eyre, and Eyre translates them into an HTTP response and
       :: writes it to our frontend.
       ::
-      %+  give-simple-payload:app  eyre-id
-      %+  require-authorization:app  inbound-request
+      %+  give-simple-payload:app:server  eyre-id
+      %+  require-authorization:app:server  inbound-request
       poke-handle-http-request:rc
     ==
   ::
-  :: on-watch handles subscriptions, which we handle by switching on the
+  :: 'on-watch' handles subscriptions, which we handle by switching on the
   :: subscription path. The path serves two purposes: it tells us the "type"
   :: of the request, and it tells us where to send updates. In the general
   :: case, you would want to store these paths, so that you can reply to them
@@ -367,15 +390,15 @@
     ::
     :: This subscription is requested by Eyre. I *think* the purpose of this
     :: is to tell us what path to send our response data to, but this is
-    :: handled for us anyway in 'give-simple-payload:app' -- so we don't
-    :: need to do anything here.
+    :: handled for us anyway in 'give-simple-payload' -- so we don't need to
+    :: do anything here.
     ::
         [%http-response *]
       `this
     ::
-    :: Similarly, this subscription is requested by the Launch app; it's
+    :: Similarly, this subscription is requested by the Launch agent; it's
     :: telling us where to send tile-related updates. In fact, *we* told
-    :: Launch to subscribe to this path, back in our 'on-init' arm. Since this
+    :: Launch to subscribe to this path, back in our 'on-init' arm. Since our
     :: app doesn't have a fancy tile (yet) we don't need to do anything here.
     ::
         [%rotetile ~]
@@ -391,8 +414,14 @@
     ::
     :: Lastly, a more interesting path: another ship is subscribing to one
     :: of our decks! Unlike the previous cases, we will react to this
-    :: subscription immediately, by sending the app the requested deck. As
+    :: subscription immediately, by sending the agent the requested deck. As
     :: with our pokes, we'll implement the logic for this in a helper arm.
+    ::
+    :: What's happening here is that we're matching the value 'path' against
+    :: the type '[%deck @ ~]', i.e. a list with two elements (the first being
+    :: '%deck', and the second being an arbitrary atom). After matching, the
+    :: type system knows that 'path' is a list, so we can access 'i.t.path' to
+    :: get the second element of the list.
     ::
         [%deck @ ~]
       =/  name  i.t.path
@@ -400,26 +429,31 @@
       [cards this]
     ==
   ::
-  :: on-agent receives "signs" from other agents (possibly on other ships),
-  :: addressed to a particular wire. A sign is another tagged union; it either
+  :: 'on-agent' receives "signs" from other agents (possibly on other ships),
+  :: addressed to a particular "wire." A sign is another tagged union; it either
   :: notifies us that something happened (%poke-ack, %watch-ack, or %kick), or
   :: delivers a cage (%fact).
   ::
   ++  on-agent
     |=  [=wire =sign:agent:gall]
     ^-  (quip card _this)
-    ?+  -.sign  (on-agent:def wire sign)
+    ::
+    :: It's best practice to switch on the wire first, then the sign; refer to
+    :: https://urbit.org/blog/precepts-discussion
+    ::
+    ?+  wire  (on-agent:def wire sign)
         ::
         :: After we subscribe to a deck, the other ship will send us the deck
-        :: data. We extract the deck's name from the wire, and then hand it off
-        :: to 'handle-import-deck', which adds it to our state and pushes it to
-        :: the '%primary' subscriber.
+        :: data. We extract the deck's name from the wire, and the actual deck
+        :: data from the sign; then we hand them off to 'handle-import-deck',
+        :: which adds the deck to our state and pushes it to the '%primary'
+        :: subscriber.
         ::
-        %fact
-      ?+  wire  (on-agent:def wire sign)
-          [%import @ @ ~]
+        [%import @ @ ~]
+      =/  name  &3.wire :: equivalent to 'i.t.t.wire'
+      ?+  -.sign  (on-agent:def wire sign)
+          %fact
         ?>  ?=(%rote-deck p.cage.sign)
-        =/  name  &3.wire
         =/  deck  !<(deck:rote q.cage.sign)
         =^  cards  state  (handle-import-deck:rc name deck)
         [cards this]
@@ -489,10 +523,10 @@
       ::
       :: This is a request to subscribe to a deck on another ship. We construct
       :: a '%watch' card that contains the subscription path and is identified
-      :: by a unique wire. Gall and Arvo will route this card to the %rote app
+      :: by a unique wire. Gall and Arvo will route this card to the %rote agent
       :: on the other ship, where it will be handled by their 'on-watch' arm.
       :: Finally, 'on-watch' will send a '%fact' sign back to us, which Arvo
-      :: and Gall will pair with our unique wire; this pair is then handled by
+      :: and Gall will pair with our unique wire; this pair is then passed to
       :: our 'on-agent' arm.
       ::
       %import
@@ -516,7 +550,7 @@
   :: The delivery of cards is somewhat nuanced, so bear with me. Cards are
   :: addressed to a set of subscription paths on a set of ships. In practice,
   :: you almost always address cards to a single path or to '~', and to a single
-  :: ship or '~'. This sentinel, '~', means either "return to sender" or
+  :: ship or to '~'. This sentinel, '~', means either "return to sender" or
   :: "broadcast," depending on whether the card is returned from 'on-watch' or
   :: another arm. Let's break it down by card type.
   ::
@@ -527,13 +561,12 @@
   :: You cannot specify the set of recipient ships in a '%fact' card. This is
   :: because the recipients are always implied by the context. If the card is
   :: returned from 'on-watch' and 'paths' is '~', then the card is sent to a
-  :: single ship: the ship who sent the '%watch' that triggered the 'on-watch'.
-  :: '~' acts as a sentinel value here; the other ship will actually receive a
-  :: card addressed to the same path it subscribed to. Outside of 'on-watch',
-  :: '~' is illegal, and will probably cause a crash. You must provide an
-  :: explicit set of paths, and the '%fact' will be sent to all ships subscribed
-  :: to those paths. It's ok to use explicit paths in 'on-watch'; they will be
-  :: broadcast to all ships as usual.
+  :: single ship -- the ship who sent the '%watch' that triggered the 'on-watch'
+  :: -- and the card will be addressed to the same path that the ship subscribed
+  :: to. Outside of 'on-watch', '~' is illegal, and will probably cause a crash.
+  :: You must provide an explicit set of paths, and the '%fact' will be sent to
+  :: all ships subscribed to those paths. It's ok to use explicit paths in
+  :: 'on-watch'; they will be broadcast to all ships as usual.
   ::
   :: The '%kick' card looks like this:
   ::
@@ -542,20 +575,20 @@
   :: Unlike '%fact', the set of recipients is not implied by context. For
   :: example, you can easily imagine a "ban" command, handled by 'on-poke',
   :: that kicks a specific ship. The sentinel value '~' can be used for either
-  :: the paths or the ships, or both. Within 'on-watch', '~' refers to the
-  :: subscription path (as in '%fact'), as well as the subscribing ship. Outside
-  :: 'on-watch', '~' means "all paths" and "all ships." Thus, you can kick all
-  :: paths on a particular ship, or all ships on a particular path, or all paths
-  :: on all ships.
+  :: the paths or the ships, or both. Within 'on-watch', the first '~' is short
+  :: for the subscription path (as in '%fact'), and the second '~' is short for
+  :: the subscribing ship. Outside 'on-watch', '~' means "all paths" and "all
+  :: ships," respectively. Thus, you can kick all paths on a particular ship,
+  :: or all ships on a particular path, or all paths on all ships.
   ::
   :: So: here, we are using '~' with '%fact' to send a deck to the subscriber,
   :: down the same path they subscribed to; and then using '~' with '%kick' to
   :: immediately kick the subscribing ship from that same path.
   ::
-  :: Lastly: %rote-deck is not an arbitrary symbol; it's a proper Clay mark.
+  :: Lastly: '%rote-deck' is not an arbitrary symbol; it's a proper Clay mark.
   :: When there's a hyphen in the name, everything before the first hyphen is
-  :: interpreted as a directory, so
-  :: Arvo will look for this mark in /mar/rote/deck.hoon.
+  :: interpreted as a directory, so Arvo will look for this mark at
+  :: /mar/rote/deck.hoon.
   ::
   :~  [%give %fact ~ %rote-deck !>(deck)]
       [%give %kick ~ ~]
@@ -571,96 +604,6 @@
   =/  ds  (~(put by remote-decks.state) [author.deck name] deck)
   :_  state(remote-decks ds)
   [[%give %fact [/primary]~ %rote-deck !>(deck)]]~
-::
-:: These arms are values, not gates; they're just cards that we pass to Clay,
-:: but we define them here because we use them in a few different places.
-::
-++  clay-sing
-  ^-  card
-  ::
-  :: There's a lot going on here! '%sing' is short for "single" -- we're
-  :: querying the state at a particular instant, rather than an ongoing
-  :: subscription. '%t' means we want a directory listing (rather than, e.g.,
-  :: the contents of a file), and 'now.bowl' is the current time. We also
-  :: specify '/reload', the wire we saw in 'on-arvo'.
-  ::
-  =/  =rave:clay  [%sing %t [%da now.bowl] /app/rote/decks]
-  [%pass /reload %arvo %c %warp our.bowl q.byk.bowl `rave]
-::
-++  clay-next
-  ^-  card
-  ::
-  :: This card is identical to 'clay-sing', except that we specify '%next'
-  :: instead of '%sing'. '%next' means "notify me the next time this thing
-  :: changes," so unlike '%sing', it won't produce a response immediately.
-  ::
-  =/  =rave:clay  [%next %t [%da now.bowl] /app/rote/decks]
-  [%pass /reload %arvo %c %warp our.bowl q.byk.bowl `rave]
-::
-:: Okay, this one is a gate; it's paramaterized on a path. Unlike the cards
-:: above, this one requests the contents of a single file, rather than a
-:: directory listing. We return a card like this for every deck file, so that
-:: we'll be notified if any of them change.
-::
-++  clay-update
-  |=  =path
-  ^-  card
-  =/  =rave:clay  [%next %x [%da now.bowl] path]
-  [%pass /update %arvo %c %warp our.bowl q.byk.bowl `rave]
-::
-:: 'reload-decks' handles reading the deck udon files, parsing them, and adding
-:: them to our state.
-::
-++  reload-decks
-  |=  paths=(list path)
-  ^-  (quip card _state)
-  ::
-  :: '|^' composes an expression (the first argument) with a core (the second).
-  :: It's useful when you need to define one or more helper functions for
-  :: computing a particular value.
-  ::
-  |^
-  =/  next-cards  (turn paths clay-update)
-  :-  (snoc next-cards clay-next)
-  ::
-  :: 'turn' calls 'read-deck' on each element of 'paths', producing a new list.
-  :: 'molt' takes a list of pairs and turns them into a map. We want a map from
-  :: deck names to decks, so 'read-deck' takes a single path and turns it into
-  :: a pair of name and deck.
-  ::
-  state(local-decks (molt (turn paths read-deck)))
-  ++  read-deck
-    |=  =path
-    ^-  [@ta deck:rote]
-    ?>  ?=([%app %rote %decks @ %udon ~] path)
-    =/  name=@tas  &4:path
-    ::
-    :: A "beak" is a filesystem path prefix; it's a combination of your ship name,
-    :: desk name, and a revision identifier (which is like a more flexible variant
-    :: of a git commit hash). We concatenate our beak with 'path' to construct the
-    :: full path, then use the '.^' rune to scry it. '@t' specifies the aura we
-    :: want to apply to the result, and '%cx' means we're scrying file data ('x')
-    :: from Clay ('c').
-    ::
-    =/  our-beak  /(scot %p our.bowl)/[q.byk.bowl]/(scot %da now.bowl)
-    =/  =deck:rote  (parse-deck name .^(@t %cx (welp our-beak path)))
-    [name deck]
-  --
-::
-:: 'update-deck' parses a deck from a 'rant' (a Clay structure containing the
-:: data at a particular node in the filesystem), and stores it in the state.
-:: It also produces a 'clay-update' card, subscribing to the next change made
-:: to that particular file.
-::
-++  update-deck
-  |=  =rant:clay
-  ^-  (quip card _state)
-  =/  =path  q.rant
-  =/  name  &4.path
-  =/  udon  !<(@t q.r.rant)
-  =/  ds  (~(put by local-decks.state) name (parse-deck name udon))
-  :_  state(local-decks ds)
-  [(clay-update path)]~
 ::
 :: The handler for HTTP GET requests. There are two major cases we need to
 :: handle: static resources (HTML/JS/CSS/images) and deck data.
@@ -729,6 +672,122 @@
       [%'~rote' *]  (html-response:gen index)
   ==
 ::
+:: Okay, everything after this point concerns loading deck files from Clay. But
+:: before we get any deeper into Clay-land, I want to make one thing clear: your
+:: app probably doesn't need Clay!
+::
+:: Coming from Unix, this is counterintuitive: Clay is the Urbit filesystem, and
+:: pretty much every app needs to talk to the filesystem, right? But remember:
+:: Urbit is a single-level store. That means there isn't a hard distinction
+:: between RAM (fast, small, ephemeral) and disk (slow, large, permanent). When
+:: we return a new agent from one of our arms, Gall ensures that that value is
+:: committed durably to the single-level store. It sounds a little insane, but
+:: imagine if you had a Unix binary with all its state embedded inside it, and
+:: whenever you ran the binary, it would perform some action, mutate its state,
+:: and then write itself back to disk. That's kinda what's going on here!
+::
+:: Anyway: since your state is already being stored durably, that's usually all
+:: you need. The most common reason to use Clay is so that you can interface
+:: with Unix: for rote (and publish), this allows users to write Markdown files
+:: with their favorite Unix editor, and then import them into the app. But if
+:: rote had a built-in deck editor, I would probably strip out all the Clay
+:: code. So: if your app doesn't need to interop with a Unix filesystem, you
+:: can safely skip this section.
+::
+:: Moving on...
+::
+:: 'clay-sing' and 'clay-next' aren't gates; they're just cards that we pass to
+:: Clay. I defined them here because they're used in multiple places, and to
+:: avoid cluttering the other code with Clay-specific details.
+::
+++  clay-sing
+  ^-  card
+  ::
+  :: There's a lot going on here! '%sing' is short for "single" -- we're
+  :: querying the state at a particular instant, rather than an ongoing
+  :: subscription. '%t' means we want a directory listing (rather than, e.g.,
+  :: the contents of a file), and 'now.bowl' is the current time. We also
+  :: specify '/reload', the wire we saw in 'on-arvo'.
+  ::
+  =/  =rave:clay  [%sing %t [%da now.bowl] /app/rote/decks]
+  [%pass /reload %arvo %c %warp our.bowl q.byk.bowl `rave]
+::
+++  clay-next
+  ^-  card
+  ::
+  :: This card is identical to 'clay-sing', except that we specify '%next'
+  :: instead of '%sing'. '%next' means "notify me the next time this thing
+  :: changes," so unlike '%sing', it won't produce a response immediately.
+  ::
+  =/  =rave:clay  [%next %t [%da now.bowl] /app/rote/decks]
+  [%pass /reload %arvo %c %warp our.bowl q.byk.bowl `rave]
+::
+:: Unlike the cards above, 'clay-update' is a gate (parameterized on a path),
+:: and it requests the contents of a single file, rather than a directory. We
+:: return a card like this for every deck file, so that we'll be notified if
+:: any of them change.
+::
+++  clay-update
+  |=  =path
+  ^-  card
+  =/  =rave:clay  [%next %x [%da now.bowl] path]
+  [%pass /update %arvo %c %warp our.bowl q.byk.bowl `rave]
+::
+:: 'reload-decks' handles reading the deck udon files, parsing them, and adding
+:: them to our state.
+::
+++  reload-decks
+  |=  paths=(list path)
+  ^-  (quip card _state)
+  ::
+  :: '|^' composes an expression (the first argument) with a core (the second).
+  :: It's useful when you need to define one or more helper functions for
+  :: computing a particular value.
+  ::
+  |^
+  =/  next-cards  (turn paths clay-update)
+  :-  (snoc next-cards clay-next)
+  ::
+  :: 'molt' takes a list of pairs and turns them into a map. We want a map from
+  :: deck names to decks, so 'read-deck' takes a single path and turns it into
+  :: a pair of name and deck.
+  ::
+  state(local-decks (molt (turn paths read-deck)))
+  ++  read-deck
+    |=  =path
+    ^-  [@ta deck:rote]
+    ?>  ?=([%app %rote %decks @ %udon ~] path)
+    =/  name=@ta  &4:path
+    ::
+    :: Here we construct a "beak," which we saw earlier in the Ford imports as
+    :: '==='. We have to build it manually here, because we need the current
+    :: time; '===' will expand to a beak whose current time is the *build* time
+    :: of the agent, rather than the time in 'bowl'.
+    ::
+    :: We concatenate our beak with 'path' to construct the full path, and then
+    :: use the '.^' rune to scry it. '@t' specifies the aura of the data, and
+    :: '%cx' means we're scrying file data ('x') from Clay ('c').
+    ::
+    =/  our-beak  /(scot %p our.bowl)/[q.byk.bowl]/(scot %da now.bowl)
+    =/  =deck:rote  (parse-deck name .^(@t %cx (welp our-beak path)))
+    [name deck]
+  --
+::
+:: 'update-deck' parses a deck from a 'rant' (a Clay structure containing the
+:: data at a particular node in the filesystem), and stores it in the state.
+:: It also produces a 'clay-update' card, subscribing to the next change made
+:: to that particular file.
+::
+++  update-deck
+  |=  =rant:clay
+  ^-  (quip card _state)
+  =/  =path  q.rant
+  =/  name  &4.path
+  =/  udon  !<(@t q.r.rant)
+  =/  ds  (~(put by local-decks.state) name (parse-deck name udon))
+  :_  state(local-decks ds)
+  [(clay-update path)]~
+::
 :: 'parse-deck' is our udon deck file parser. It's fairly dense and not
 :: terribly relevant to other apps, so feel free to skip it.
 ::
@@ -767,7 +826,7 @@
 --
 ::
 :: You're done! Hopefully you have a better picture of how to create your own
-:: Gall app now. If there are things you're still confused by, or parts that
+:: Gall agent now. If there are things you're still confused by, or parts that
 :: could be worded more clearly, don't hesitate to open an issue or pull
 :: request:
 ::

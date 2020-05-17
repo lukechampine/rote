@@ -32399,6 +32399,7 @@
                 global$2[key$1] = "esm";
               }
             }
+            //# sourceMappingURL=react-router.js.map
 
             /**
              * The public API for a <Router> that uses HTML5 history.
@@ -32698,6 +32699,7 @@
                 style: propTypes.object
               });
             }
+            //# sourceMappingURL=react-router-dom.js.map
 
             /**
              * Copyright (c) 2014-present, Facebook, Inc.
@@ -42695,7 +42697,6 @@
                       onClick: importDeck,
                       className: "db f9 green2 ba pa2 b--green2 bg-gray0-d pointer"       , __self: this, __source: {fileName: _jsxFileName$4, lineNumber: 37}}, "Import")
                     , react.createElement('br', {__self: this, __source: {fileName: _jsxFileName$4, lineNumber: 40}} )
-                    , react.createElement('p', { className: "gray3", __self: this, __source: {fileName: _jsxFileName$4, lineNumber: 41}}, "You may need to refresh after importing, sorry! Working on it..."          )
                   )
                 )
               )
@@ -44299,6 +44300,23 @@
                 }
             ;
 
+            var path$1 = /*#__PURE__*/Object.freeze({
+                        __proto__: null,
+                        resolve: resolve,
+                        normalize: normalize,
+                        isAbsolute: isAbsolute$1,
+                        join: join,
+                        relative: relative,
+                        sep: sep,
+                        delimiter: delimiter,
+                        dirname: dirname,
+                        basename: basename,
+                        extname: extname,
+                        'default': path
+            });
+
+            var path$2 = getCjsExportFromNamespace(path$1);
+
             function replaceExt(npath, ext) {
               if (typeof npath !== 'string') {
                 return npath;
@@ -44308,8 +44326,8 @@
                 return npath;
               }
 
-              var nFileName = path.basename(npath, path.extname(npath)) + ext;
-              return path.join(path.dirname(npath), nFileName);
+              var nFileName = path$2.basename(npath, path$2.extname(npath)) + ext;
+              return path$2.join(path$2.dirname(npath), nFileName);
             }
 
             var replaceExt_1 = replaceExt;
@@ -44415,30 +44433,30 @@
             /* Access parent path (`~`). */
             Object.defineProperty(proto$1, 'dirname', {
               get: function () {
-                return typeof this.path === 'string' ? path.dirname(this.path) : undefined;
+                return typeof this.path === 'string' ? path$2.dirname(this.path) : undefined;
               },
               set: function (dirname) {
                 assertPath(this.path, 'dirname');
-                this.path = path.join(dirname || '', this.basename);
+                this.path = path$2.join(dirname || '', this.basename);
               }
             });
 
             /* Access basename (`index.min.js`). */
             Object.defineProperty(proto$1, 'basename', {
               get: function () {
-                return typeof this.path === 'string' ? path.basename(this.path) : undefined;
+                return typeof this.path === 'string' ? path$2.basename(this.path) : undefined;
               },
               set: function (basename) {
                 assertNonEmpty(basename, 'basename');
                 assertPart(basename, 'basename');
-                this.path = path.join(this.dirname || '', basename);
+                this.path = path$2.join(this.dirname || '', basename);
               }
             });
 
             /* Access extname (`.js`). */
             Object.defineProperty(proto$1, 'extname', {
               get: function () {
-                return typeof this.path === 'string' ? path.extname(this.path) : undefined;
+                return typeof this.path === 'string' ? path$2.extname(this.path) : undefined;
               },
               set: function (extname) {
                 var ext = extname || '';
@@ -44463,12 +44481,12 @@
             /* Access stem (`index.min`). */
             Object.defineProperty(proto$1, 'stem', {
               get: function () {
-                return typeof this.path === 'string' ? path.basename(this.path, this.extname) : undefined;
+                return typeof this.path === 'string' ? path$2.basename(this.path, this.extname) : undefined;
               },
               set: function (stem) {
                 assertNonEmpty(stem, 'stem');
                 assertPart(stem, 'stem');
-                this.path = path.join(this.dirname || '', stem + (this.extname || ''));
+                this.path = path$2.join(this.dirname || '', stem + (this.extname || ''));
               }
             });
 
@@ -44481,8 +44499,8 @@
             /* Assert that `part` is not a path (i.e., does
              * not contain `path.sep`). */
             function assertPart(part, name) {
-              if (part.indexOf(path.sep) !== -1) {
-                throw new Error('`' + name + '` cannot be a path: did not expect `' + path.sep + '`');
+              if (part.indexOf(path$2.sep) !== -1) {
+                throw new Error('`' + name + '` cannot be a path: did not expect `' + path$2.sep + '`');
               }
             }
 
@@ -47675,7 +47693,7 @@
               return Object.prototype.hasOwnProperty.call(obj, prop);
             }
 
-            var require$$0 = {
+            var util = {
               inherits: inherits$1,
               _extend: _extend,
               log: log,
@@ -47699,6 +47717,33 @@
               format: format,
               debuglog: debuglog
             };
+
+            var util$1 = /*#__PURE__*/Object.freeze({
+                        __proto__: null,
+                        format: format,
+                        deprecate: deprecate,
+                        debuglog: debuglog,
+                        inspect: inspect,
+                        isArray: isArray$2,
+                        isBoolean: isBoolean,
+                        isNull: isNull,
+                        isNullOrUndefined: isNullOrUndefined,
+                        isNumber: isNumber,
+                        isString: isString$1,
+                        isSymbol: isSymbol,
+                        isUndefined: isUndefined,
+                        isRegExp: isRegExp,
+                        isObject: isObject,
+                        isDate: isDate,
+                        isError: isError,
+                        isFunction: isFunction,
+                        isPrimitive: isPrimitive,
+                        isBuffer: isBuffer$2,
+                        log: log,
+                        inherits: inherits$1,
+                        _extend: _extend,
+                        'default': util
+            });
 
             var inherits_browser = createCommonjsModule(function (module) {
             if (typeof Object.create === 'function') {
@@ -47729,6 +47774,8 @@
               };
             }
             });
+
+            var require$$0 = getCjsExportFromNamespace(util$1);
 
             var inherits$2 = createCommonjsModule(function (module) {
             try {
