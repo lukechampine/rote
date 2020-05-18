@@ -44,3 +44,7 @@ For Hoon practice, try importing these decks!
 
 This repository also functions as a walkthrough for creating your own Gall
 app! Open up [rote.hoon](urbit/app/rote.hoon) and read the whole thing.
+
+## Screenshot
+
+![screenshot](rote.png)
