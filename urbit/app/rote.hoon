@@ -325,7 +325,7 @@
         `this  :: irregular syntax for '[~ this]'
       ::
           %reset-state
-        `this(state *_state)  :: irregular syntax for "the bunt value of '_state'"
+        `this(state *versioned-state)  :: irregular syntax for bunt value
       ==
         ::
         :: %rote-action is where we handle pokes from other agents. Somewhat
