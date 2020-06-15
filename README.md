@@ -4,7 +4,9 @@ A flashcard app for Landscape.
 
 ## Installation
 
-Create an `.urbitrc` file:
+First, boot your ship, and make sure you've mounted its pier by running `|mount %` in Dojo.
+
+Then, clone this repo, and create an `.urbitrc` file in the repo directory with the following contents:
 
 ```js
 module.exports = {
@@ -14,14 +16,14 @@ module.exports = {
 };
 ```
 
-Then, in Unix:
+Then run these commands from the repo root:
 
 ```
 yarn
 yarn run build
 ```
 
-Then, in Dojo:
+Finally, in your ship's Dojo, run:
 
 ```
 |commit %home
