@@ -424,7 +424,14 @@
     :: get the second element of the list.
     ::
         [%deck @ ~]
-      =/  name  i.t.path
+      ::
+      :: Notice that we use '=*' here, rather than '=/'. The latter adds a new
+      :: noun to the subject, whereas the former is more like an alias or a
+      :: macro. The exact semantics are worth exploring on your own later, but
+      :: for now, a simple rule of thumb suffices: use '=/' when computing new
+      :: nouns, and '=*' when referencing existing nouns.
+      ::
+      =*  name  i.t.path
       =^  cards  state  (watch-deck:rc name)
       [cards this]
     ==
@@ -450,7 +457,7 @@
         :: subscriber.
         ::
         [%import @ @ ~]
-      =/  name  &3.wire :: equivalent to 'i.t.t.wire'
+      =*  name  &3.wire :: equivalent to 'i.t.t.wire'
       ?+  -.sign  (on-agent:def wire sign)
           %fact
         ?>  ?=(%rote-deck p.cage.sign)
@@ -476,7 +483,7 @@
       ::
         [%reload ~]
       ?>  ?=([?(%b %c) %writ *] sign-arvo)
-      =/  =riot:clay  +>.sign-arvo
+      =*  riot  +>.sign-arvo
       ?>  ?=(^ riot)
       =/  paths  !<((list path) q.r.u.riot)
       =^  cards  state  (reload-decks:rc paths)
@@ -488,7 +495,7 @@
       ::
         [%update ~]
       ?>  ?=([?(%b %c) %writ *] sign-arvo)
-      =/  =riot:clay  +>.sign-arvo
+      =*  riot  +>.sign-arvo
       ?~  riot  `this  :: file was deleted
       =^  cards  state  (update-deck:rc u.riot)
       [cards this]
@@ -622,7 +629,7 @@
       [%'~rote' %js %tile ~]    (js-response:gen tile-js)
       [%'~rote' %js %index ~]   (js-response:gen script)
       [%'~rote' %img @t *]
-    =/  name=@t  i.t.t.site.url
+    =*  name  i.t.t.site.url
     =/  img  (~(get by rote-png) name)
     ?~  img  not-found:gen
     (png-response:gen (as-octs:mimes:html u.img))
@@ -757,7 +764,7 @@
     |=  =path
     ^-  [@ta deck:rote]
     ?>  ?=([%app %rote %decks @ %udon ~] path)
-    =/  name=@ta  &4:path
+    =*  name  &4:path
     ::
     :: Here we construct a "beak," which we saw earlier in the Ford imports as
     :: '==='. We have to build it manually here, because we need the current
@@ -781,8 +788,8 @@
 ++  update-deck
   |=  =rant:clay
   ^-  (quip card _state)
-  =/  =path  q.rant
-  =/  name  &4.path
+  =*  path  q.rant
+  =*  name  &4.path
   =/  udon  !<(@t q.r.rant)
   =/  ds  (~(put by local-decks.state) name (parse-deck name udon))
   :_  state(local-decks ds)
